@@ -24,6 +24,20 @@ void erreur(char *msg)
 static association * tableau;
 static int longueur=0;
 
+unsigned char * deformatage(unsigned char* buf,unsigned char * msg, unsigned short int * lg_total)
+{
+  if(buf[0] != 110){return NULL;}
+  memcpy(lg_total,buf+1, 2);
+  msg= malloc((*lg_total)*sizeof(char));
+  memcpy(msg+1, buf+1, (*lg_total)-1);
+  if(buf[3] != 50){return NULL;}
+  short unsigned int lg_hash= (unsigned short int)*(buf+4);
+  unsigned char * hash= malloc((1+lg_hash)*sizeof(char));
+  memcpy(hash, buf+6, lg_hash);
+  hash[lg_hash]='\0';
+  return msg;
+}
+
 // renvoi 1 si le couple hash ip existe déjà
 int test_existance(char * ad, int p, char * hash)
 {
@@ -76,7 +90,7 @@ char * concat(char* str1, char * str2)
 int main(int argc, char **argv)
 {
   int sockfd;
-  char buf[BUF_SIZE];
+  unsigned char buf[BUF_SIZE];
   socklen_t addrlen;
 
   struct sockaddr_in6 my_addr; // in = internet
@@ -130,45 +144,16 @@ int main(int argc, char **argv)
   {
     // reception de la chaine de caracteres
     if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1){ erreur("recvfrom"); }
-
-    if(strncmp(buf, "put ", 4) == 0)
+    if(buf[0] == 110)
     {
-      char * hash= malloc((strlen(buf)-4)*sizeof(char));
-      int i;
-      for(i=4; buf[i] != '\0' && buf[i]!= '\0'; i++)
-      {
-        hash[i-4]= buf[i];
-        hash[i-3]= '\0';
-      }
-      char * msg=concat("ACK_PUT", hash);
-      if(sendto(sockfd, msg, strlen(msg), 0, (struct sockaddr *) &client, addrlen) == -1){ erreur("sendto"); }
+      short unsigned int lg;
+      unsigned char * msg= NULL;
+      msg= deformatage(buf, msg, &lg);
+      msg[0]=50;
+      if(sendto(sockfd, msg, lg, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       free(msg);
-      int p;
-      char * ad= malloc(sizeof(INET6_ADDRSTRLEN));
-      if (inet_ntop(AF_INET6, &(client.sin6_addr), ad, INET6_ADDRSTRLEN) == NULL) {
-        perror("inet_ntop");
-        exit(EXIT_FAILURE);
-      }
-      p= ntohs(client.sin6_port);
-      ajout(ad, p, hash);
     }
-    else if(strncmp(buf, "get ", 4) == 0)
-    {
-      char * hash= malloc((strlen(buf)-4)*sizeof(char));
-      int i;
-      for(i=3; buf[i] != '\0' && buf[i]!= '\0'; i++)
-      {
-        hash[i-3]= buf[i];
-        hash[i+1]= '\0';
-      }
-
-      free(hash);
-    }
-
-    // print the received char
-    printf("%s\n", buf);
-    int i;
-    for(i=0; i<1024; i++){buf[i]='\0';}
+    memset(buf, '\0', BUF_SIZE);
   }
 
   // close the socket
