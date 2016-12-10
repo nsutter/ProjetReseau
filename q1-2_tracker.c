@@ -24,8 +24,8 @@ void erreur(char *msg)
   exit(-1);
 }
 
-static association * tableau;
-static int longueur=0;
+association * tableau;
+int longueur=0;
 
 int test_existance(char * ad, int p, char * hash)
 {
@@ -56,14 +56,35 @@ void ajout(char * ad, int p,char * hash)
   }
 }
 
-char * deformatage(char* buf,char * msg, unsigned short int * lg_total)
+void get(char * msg, unsigned short int lg)
 {
+  int i;
+  unsigned short int lg_hash= lg-6;
+  for(i=0; i<longueur; i++)
+  {
+    if(strncmp(msg+6, tableau[i].hash, lg_hash))
+    {
+      lg= lg+21;
+      msg= realloc(msg, lg);
+      msg[lg-21]= 55;
+      unsigned short int tmp= 18;
+      memcpy(msg+lg-20, &tmp, 2);
+      memcpy(msg+lg-18, &(tableau[i].port), 2);
+      memcpy(msg+lg-16, &(tableau[i].addr), 16);
+    }
+  }
+  memcpy(msg+1, &lg, 2);
+}
+
+char * deformatage(char* buf, char code, unsigned short int * lg_total)
+{
+  char * msg;
   struct sockaddr_in6 stock;
-  if(buf[0] != 110){return NULL;}
+  if(buf[0] != code) return NULL;
   memcpy(lg_total,buf+1, 2);
   msg= malloc((*lg_total)*sizeof(char));
   memcpy(msg+1, buf+1, (*lg_total)-1);
-  if(buf[3] != 50){return NULL;}
+  if(buf[3] != 50) return NULL;
   short unsigned int lg_hash= (unsigned short int)*(buf+4);
   char * hash= malloc((1+lg_hash)*sizeof(char));
   memcpy(hash, buf+6, lg_hash);
@@ -72,9 +93,23 @@ char * deformatage(char* buf,char * msg, unsigned short int * lg_total)
   memcpy(&stock.sin6_addr, buf+lg_hash+11, 16);
   char *adr= malloc(sizeof(INET6_ADDRSTRLEN));
   adr= (char * ) inet_ntop(AF_INET6, &(stock.sin6_addr), adr, INET6_ADDRSTRLEN);
-  ajout(adr, ntohs(stock.sin6_port), hash);
+  if(code == 110)
+  {
+    ajout(adr, ntohs(stock.sin6_port), hash);
+    msg= malloc((*lg_total)*sizeof(char));
+    memcpy(msg+1, buf+1, (*lg_total)-1);
+  }
+  else if(code == 112)
+  {
+    msg= malloc((lg_hash+6)*sizeof(char));
+    memcpy(msg+3, buf+1, lg_hash+3);
+    get(msg, lg_hash+6);
+    memcpy(lg_total, msg+1, 2);
+    *(lg_total) = *(lg_total)+1;
+  }
   return msg;
 }
+
 
 // renvoi 1 si le couple hash ip existe déjà
 
@@ -160,14 +195,21 @@ int main(int argc, char **argv)
     {
       short unsigned int lg;
       char * msg= NULL;
-      msg= deformatage(buf, msg, &lg);
-      msg[0]=50;
+      char code= 110;
+      msg= deformatage(buf, code, &lg);
+      msg[0]=111;
       if(sendto(sockfd, msg, lg, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       free(msg);
     }
     else if(buf[0] == 112)
     {
-
+      short unsigned int lg;
+      char * msg= NULL;
+      char code= 112;
+      msg= deformatage(buf, code, &lg);
+      msg[0]=113;
+      if(sendto(sockfd, msg, lg, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
+      free(msg);
     }
     memset(buf, '\0', BUF_SIZE);
   }
