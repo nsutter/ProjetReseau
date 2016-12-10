@@ -8,6 +8,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+#include <inttypes.h>
+
+#include "dns_solve.h"
 
 #define BUF_SIZE 1024
 
@@ -24,33 +27,18 @@ void erreur(char *msg)
 static association * tableau;
 static int longueur=0;
 
-unsigned char * deformatage(unsigned char* buf,unsigned char * msg, unsigned short int * lg_total)
-{
-  if(buf[0] != 110){return NULL;}
-  memcpy(lg_total,buf+1, 2);
-  msg= malloc((*lg_total)*sizeof(char));
-  memcpy(msg+1, buf+1, (*lg_total)-1);
-  if(buf[3] != 50){return NULL;}
-  short unsigned int lg_hash= (unsigned short int)*(buf+4);
-  unsigned char * hash= malloc((1+lg_hash)*sizeof(char));
-  memcpy(hash, buf+6, lg_hash);
-  hash[lg_hash]='\0';
-  return msg;
-}
-
-// renvoi 1 si le couple hash ip existe déjà
 int test_existance(char * ad, int p, char * hash)
 {
   int i;
   for(i=0; i<longueur; i++)
   {
     if(strcmp(tableau[i].hash, hash) == 0 && strcmp(tableau[i].addr, ad) == 0 && tableau[i].port == p)
-      return 1;
+    return 1;
   }
   return 0;
 }
 
-void ajout(char * ad, int p, char * hash)
+void ajout(char * ad, int p,char * hash)
 {
   if(test_existance(ad, p, hash) == 1)
   {
@@ -67,6 +55,28 @@ void ajout(char * ad, int p, char * hash)
     free(hash);
   }
 }
+
+char * deformatage(char* buf,char * msg, unsigned short int * lg_total)
+{
+  struct sockaddr_in6 stock;
+  if(buf[0] != 110){return NULL;}
+  memcpy(lg_total,buf+1, 2);
+  msg= malloc((*lg_total)*sizeof(char));
+  memcpy(msg+1, buf+1, (*lg_total)-1);
+  if(buf[3] != 50){return NULL;}
+  short unsigned int lg_hash= (unsigned short int)*(buf+4);
+  char * hash= malloc((1+lg_hash)*sizeof(char));
+  memcpy(hash, buf+6, lg_hash);
+  hash[lg_hash]='\0';
+  memcpy(&stock.sin6_port, buf+lg_hash+9, 2);
+  memcpy(&stock.sin6_addr, buf+lg_hash+11, 16);
+  char *adr= malloc(sizeof(INET6_ADDRSTRLEN));
+  adr= (char * ) inet_ntop(AF_INET6, &(stock.sin6_addr), adr, INET6_ADDRSTRLEN);
+  ajout(adr, ntohs(stock.sin6_port), hash);
+  return msg;
+}
+
+// renvoi 1 si le couple hash ip existe déjà
 
 char * concat(char* str1, char * str2)
 {
@@ -90,7 +100,7 @@ char * concat(char* str1, char * str2)
 int main(int argc, char **argv)
 {
   int sockfd;
-  unsigned char buf[BUF_SIZE];
+  char buf[BUF_SIZE];
   socklen_t addrlen;
 
   struct sockaddr_in6 my_addr; // in = internet
@@ -115,11 +125,13 @@ int main(int argc, char **argv)
   my_addr.sin6_port        = htons(atoi(argv[2])); // transformation en uint16_t
   addrlen                  = sizeof(struct sockaddr_in6);
 
-  if(strcmp(argv[1], "localhost") == 0) my_addr.sin6_addr = in6addr_any;
-  else
+  int res;
+  res = inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr));
+  if(res == 0)
   {
-    if(inet_pton(AF_INET6, argv[1], &(my_addr.sin6_addr)) != 1) erreur("inet_pton");
+    my_addr.sin6_addr= getip(argv[1]);
   }
+
 
 
   char str[INET6_ADDRSTRLEN];
@@ -147,11 +159,15 @@ int main(int argc, char **argv)
     if(buf[0] == 110)
     {
       short unsigned int lg;
-      unsigned char * msg= NULL;
+      char * msg= NULL;
       msg= deformatage(buf, msg, &lg);
       msg[0]=50;
       if(sendto(sockfd, msg, lg, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       free(msg);
+    }
+    else if(buf[0] == 112)
+    {
+
     }
     memset(buf, '\0', BUF_SIZE);
   }
