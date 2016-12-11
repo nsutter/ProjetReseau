@@ -145,7 +145,7 @@ int main(int argc, char **argv)
   printf("%s %s from %s port %s\n", argv[4], argv[5], str, argv[2]);
 
   memset(buf, '\0', BUF_SIZE);
-  while(memcmp(buf+taille_cmp_buf, msg+1, taille_cmp) != 0 && buf[0]+1 != msg[0])
+  while(memcmp(buf+taille_cmp_buf, msg+taille_cmp_buf, 1) != 0 && buf[0]+1 != msg[0])
   {
     if(sendto(sockfd, msg, lg_msg, 0, (struct sockaddr *) &dest, addrlen) == -1)
     {
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
     }
     memset(buf, 0, BUF_SIZE);
     // reception de la chaine de caracteres
-    if(recvfrom(sockfd, buf, 1024, 0, (struct sockaddr *) &client, &addrlen) == -1)
+    if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
     {
       perror("recvfrom");
       close(sockfd);
@@ -167,6 +167,28 @@ int main(int argc, char **argv)
     }
   }
   free(msg);
+
+  if(strncmp(argv[4], "get", 3) == 0)
+  {
+    short unsigned int lg_total;
+    int i=6;
+    memcpy(&lg_total, buf+1, 2);
+    short unsigned int tmp;
+    memcpy(&tmp, buf+4, 2);
+    i=i+tmp;
+    for(; i<lg_total;)
+    {
+      i+=3;
+      struct sockaddr_in6 stock;
+      memcpy(&stock.sin6_port, buf+i, 2);
+      i=i+2;
+      memcpy(&stock.sin6_addr, buf+i, 16);
+      i=i+16;
+      char *adr= malloc(sizeof(INET6_ADDRSTRLEN));
+      adr= (char * ) inet_ntop(AF_INET6, &(stock.sin6_addr), adr, INET6_ADDRSTRLEN);
+      printf("IP: %s Port: %d\n", adr, ntohs(stock.sin6_port));
+    }
+  }
 
   // close the socket
   close(sockfd);

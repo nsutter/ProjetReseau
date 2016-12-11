@@ -61,7 +61,7 @@ void get(char * msg, unsigned short int lg)
   unsigned short int lg_hash= lg-6;
   for(i=0; i<longueur; i++)
   {
-    if(strncmp(msg+6, tableau[i].hash, lg_hash))
+    if(strncmp(msg+6, tableau[i].hash, lg_hash) == 0)
     {
       lg= lg+21;
       msg= realloc(msg, lg);
@@ -71,9 +71,9 @@ void get(char * msg, unsigned short int lg)
       uint16_t tmp1;
       tmp1= ntohs(tableau[i].port);
       memcpy(msg+lg-18, &tmp1, 2);
-      struct in6_addr tmp2;
-      inet_pton(AF_INET6, tableau[i].addr,&tmp);
-      memcpy(msg+lg-16, &tmp2, 16);
+      struct sockaddr_in6 sa;
+      inet_pton(AF_INET6, tableau[i].addr, &(sa.sin6_addr));
+      memcpy(msg+lg-16, &(sa.sin6_addr), 16);
     }
   }
   memcpy(msg+1, &lg, 2);
@@ -105,7 +105,7 @@ char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total)
   else if(code == 112)
   {
     msg= malloc((lg_hash+6)*sizeof(char));
-    memcpy(msg+3, buf+1, lg_hash+3);
+    memcpy(msg+3, buf+3, lg_hash+3);
     get(msg, lg_hash+6);
     memcpy(lg_total, msg+1, 2);
     *(lg_total) = *(lg_total)+1;
@@ -219,6 +219,8 @@ int main(int argc, char **argv)
       char code= 112;
       msg= deformatage(buf, code, &lg);
       msg[0]=113;
+      short unsigned int tmp;
+      memcpy(&tmp, msg+4, 2);
       if(sendto(sockfd, msg, lg, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       free(msg);
     }
