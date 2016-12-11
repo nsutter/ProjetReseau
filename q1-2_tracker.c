@@ -40,14 +40,13 @@ int test_existance(char * ad, int p, char * hash)
 
 void ajout(char * ad, int p,char * hash)
 {
-  if(test_existance(ad, p, hash) == 1)
+  if(test_existance(ad, p, hash) == 0)
   {
     longueur= longueur +1;
     tableau= realloc(tableau, longueur * sizeof(association));
     tableau[longueur-1].hash= hash;
     tableau[longueur-1].addr= ad;
     tableau[longueur-1].port= p;
-    free(hash);
   }
   else
   {
@@ -69,14 +68,18 @@ void get(char * msg, unsigned short int lg)
       msg[lg-21]= 55;
       unsigned short int tmp= 18;
       memcpy(msg+lg-20, &tmp, 2);
-      memcpy(msg+lg-18, &(tableau[i].port), 2);
-      memcpy(msg+lg-16, &(tableau[i].addr), 16);
+      uint16_t tmp1;
+      tmp1= ntohs(tableau[i].port);
+      memcpy(msg+lg-18, &tmp1, 2);
+      struct in6_addr tmp2;
+      inet_pton(AF_INET6, tableau[i].addr,&tmp);
+      memcpy(msg+lg-16, &tmp2, 16);
     }
   }
   memcpy(msg+1, &lg, 2);
 }
 
-char * deformatage(char* buf, char code, unsigned short int * lg_total)
+char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total)
 {
   char * msg;
   struct sockaddr_in6 stock;
@@ -110,6 +113,14 @@ char * deformatage(char* buf, char code, unsigned short int * lg_total)
   return msg;
 }
 
+void affiche()
+{
+  int i;
+  for(i=0; i<longueur; i++)
+  {
+    printf("%s %d %s\n", tableau[i].hash, tableau[i].port, tableau[i].addr);
+  }
+}
 
 // renvoi 1 si le couple hash ip existe déjà
 
@@ -135,7 +146,7 @@ char * concat(char* str1, char * str2)
 int main(int argc, char **argv)
 {
   int sockfd;
-  char buf[BUF_SIZE];
+  unsigned char buf[BUF_SIZE];
   socklen_t addrlen;
 
   struct sockaddr_in6 my_addr; // in = internet
@@ -210,6 +221,10 @@ int main(int argc, char **argv)
       msg[0]=113;
       if(sendto(sockfd, msg, lg, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       free(msg);
+    }
+    else if(buf[0] == 150)
+    {
+      affiche();
     }
     memset(buf, '\0', BUF_SIZE);
   }

@@ -128,6 +128,15 @@ int main(int argc, char **argv)
     taille_cmp= lg_msg-24;
     taille_cmp_buf = 3;
   }
+  else if(strncmp(argv[4], "aff", 3) ==0)
+  {
+    msg= malloc(2*sizeof(char));
+    msg[0]= 150;
+    msg[1]=10;
+    lg_msg=2;
+    taille_cmp= 1;
+    taille_cmp_buf = 0;
+  }
   else
   {
     msg= NULL;
@@ -144,7 +153,10 @@ int main(int argc, char **argv)
       close(sockfd);
       exit(EXIT_FAILURE);
     }
-
+    if(taille_cmp ==1)
+    {
+      break;
+    }
     memset(buf, 0, BUF_SIZE);
     // reception de la chaine de caracteres
     if(recvfrom(sockfd, buf, 1024, 0, (struct sockaddr *) &client, &addrlen) == -1)
