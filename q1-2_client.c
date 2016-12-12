@@ -113,20 +113,20 @@ int main(int argc, char **argv)
   printf("listening on %s \n", argv[3]);
   char * msg;
   int lg_msg;
-  int taille_cmp, taille_cmp_buf;
+  int taille_cmp, shift;
   if(strncmp(argv[4], "put", 3) ==0)
   {
     char tmp=110;
     msg= formatage_donnee(tmp, argv[5], my_addr, &lg_msg);
     taille_cmp= lg_msg-1;
-    taille_cmp_buf= 1;
+    shift= 1;
   }
   else if(strncmp(argv[4], "get", 3) == 0)
   {
     char tmp=112;
     msg= formatage_donnee(tmp, argv[5], my_addr, &lg_msg);
     taille_cmp= lg_msg-24;
-    taille_cmp_buf = 3;
+    shift = 3;
   }
   else if(strncmp(argv[4], "aff", 3) ==0)
   {
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
     msg[1]=10;
     lg_msg=2;
     taille_cmp= 1;
-    taille_cmp_buf = 0;
+    shift = 1;
   }
   else
   {
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
   printf("%s %s from %s port %s\n", argv[4], argv[5], str, argv[2]);
 
   memset(buf, '\0', BUF_SIZE);
-  while(memcmp(buf+taille_cmp_buf, msg+taille_cmp_buf, 1) != 0 && buf[0]+1 != msg[0])
+  while(memcmp(buf+shift, msg+shift, taille_cmp) != 0 && buf[0]+1 != msg[0])
   {
     if(sendto(sockfd, msg, lg_msg, 0, (struct sockaddr *) &dest, addrlen) == -1)
     {

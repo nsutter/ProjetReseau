@@ -208,7 +208,15 @@ int main(int argc, char **argv)
   while(270)
   {
     sleep(TIME_KEEP_ALIVE);
-    // envoi du message et vérification oklm
+    memset(buf, 0, BUF_SIZE);
+    while(memcmp(buf+1, msg+1, lg_msg_keep_alive-1) != 0 && buf[0]+1 != msg[0])
+    {
+      if(sendto(sockfd, msg, lg_msg, 0, (struct sockaddr *) &dest, addrlen) == -1)
+        erreur("sendto");
+      memset(buf, 0, BUF_SIZE);
+      if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
+        erreur("recvfrom");
+    }
   }
 
   // close the socket

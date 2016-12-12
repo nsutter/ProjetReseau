@@ -27,6 +27,7 @@ void erreur(char *msg)
 association * tableau;
 int longueur=0;
 
+// fonction qui test si l'ip+le port + le hash sont deja dans la tableau
 int test_existance(char * ad, int p, char * hash)
 {
   int i;
@@ -38,6 +39,7 @@ int test_existance(char * ad, int p, char * hash)
   return 0;
 }
 
+//fonction qui ajoute au tableau un hash, port et ip
 void ajout(char * ad, int p,char * hash)
 {
   if(test_existance(ad, p, hash) == 0)
@@ -55,6 +57,9 @@ void ajout(char * ad, int p,char * hash)
   }
 }
 
+//si la fonction get est appeler elle modifie msg par effet de bord et y ajoute
+// tous les ip+ port correspondant a un hash
+//msg contient deja le hash
 void get(char * msg, unsigned short int lg)
 {
   int i;
