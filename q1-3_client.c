@@ -12,7 +12,7 @@
 #include "dns_solve.h"
 
 #define BUF_SIZE 1024
-#define TIME_KEEP_ALIVE 10
+#define TIME_KEEP_ALIVE 2
 
 void erreur(char *msg)
 {
@@ -211,7 +211,7 @@ int main(int argc, char **argv)
     memset(buf, 0, BUF_SIZE);
     while(memcmp(buf+1, msg+1, lg_msg_keep_alive-1) != 0 && buf[0]+1 != msg[0])
     {
-      if(sendto(sockfd, msg, lg_msg, 0, (struct sockaddr *) &dest, addrlen) == -1)
+      if(sendto(sockfd, msg_keep_alive, lg_msg, 0, (struct sockaddr *) &dest, addrlen) == -1)
         erreur("sendto");
       memset(buf, 0, BUF_SIZE);
       if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)

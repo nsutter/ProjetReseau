@@ -9,11 +9,14 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <inttypes.h>
+#include <sys/time.h>
+#include <pthread.h>
 
 #include "dns_solve.h"
 
 #define BUF_SIZE 1024
 #define SLEEP_THREAD_TIMER 1
+#define TIMEOUT 5
 
 //associe a un hash une liste d'ip + port
 typedef struct {char * hash; char * addr; int port; time_t timer;} association;
@@ -29,6 +32,29 @@ association * tableau;
 int longueur=0;
 
 /*
+Supprime l'entrée à l'index id du tableau d'association
+*/
+void suppression(int id)
+{
+  if(id < longueur)
+  {
+    int i;
+
+    free(tableau[id].hash);
+    free(tableau[id].addr);
+
+    for(i = id; i < longueur - 1; i++) // on décale tout le tableau après id
+    {
+      tableau[i] = tableau[i + 1];
+    }
+
+    longueur--;
+
+    tableau= realloc(tableau, longueur * sizeof(association));
+  }
+}
+
+/*
   thread qui gère l'expiration du temps
 */
 void * f_thread_timer(void * arg)
@@ -42,13 +68,13 @@ void * f_thread_timer(void * arg)
   {
     sleep(SLEEP_THREAD_TIMER);
 
-    if(gettimeofday(&tv) == -1)
+    if(gettimeofday(&tv, NULL) == -1)
       erreur("gettimeofday");
 
     for(i = 0; i < longueur; i++)
     {
-      if(tableau[i].timer + TIMEOUT > tv.tv_sec);
-      // suppression(i);
+      if(tableau[i].timer + TIMEOUT > tv.tv_sec)
+        suppression(i);
     }
   }
 }
@@ -59,7 +85,12 @@ int test_existance(char * ad, int p, char * hash)
   for(i=0; i<longueur; i++)
   {
     if(strcmp(tableau[i].hash, hash) == 0 && strcmp(tableau[i].addr, ad) == 0 && tableau[i].port == p)
-    return 1;
+    {
+      struct timeval tv;
+      if(gettimeofday(&tv, NULL) == -1)
+        erreur("gettimeofday");
+      tableau[i].timer= tv.tv_sec;
+    }
   }
   return 0;
 }
@@ -81,28 +112,6 @@ void ajout(char * ad, int p,char * hash)
   }
 }
 
-/*
-  Supprime l'entrée à l'index id du tableau d'association
-*/
-void suppression(int id)
-{
-  if(id < longueur)
-  {
-    int i;
-
-    free(tableau[id].hash);
-    free(tableau[id].addr);
-
-    for(i = id; i < longueur - 1; i++) // on décale tout le tableau après id
-    {
-      tableau[i] = tableau[i + 1];
-    }
-
-    longueur--;
-
-    tableau= realloc(tableau, longueur * sizeof(association));
-  }
-}
 
 void get(char * msg, unsigned short int lg)
 {
@@ -286,6 +295,25 @@ int main(int argc, char **argv)
     else if(buf[0] == 150)
     {
       affiche();
+    }
+    else if(buf[0] == 114)
+    {
+      unsigned short int lg;
+      memcpy(&lg, buf+1, 2);
+      if(buf[3] == 1)
+      {
+        unsigned short int lg_hash;
+        memcpy(&lg_hash, buf+4, 2);
+        char * hash=malloc(lg_hash*sizeof(char));
+        memcpy(&hash, buf+6, lg_hash);
+        char addr[INET6_ADDRSTRLEN];
+        if (inet_ntop(AF_INET6, &(client.sin6_addr), addr, INET6_ADDRSTRLEN) == NULL)
+          erreur("inet_ntop");
+        test_existance(addr,ntohs(client.sin6_port),hash);
+        free(hash);
+      }
+
+
     }
     memset(buf, '\0', BUF_SIZE);
   }
