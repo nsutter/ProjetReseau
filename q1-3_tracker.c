@@ -13,6 +13,7 @@
 #include "dns_solve.h"
 
 #define BUF_SIZE 1024
+#define SLEEP_THREAD_TIMER 1
 
 //associe a un hash une liste d'ip + port
 typedef struct {char * hash; char * addr; int port; time_t timer;} association;
@@ -26,6 +27,31 @@ void erreur(char *msg)
 
 association * tableau;
 int longueur=0;
+
+/*
+  thread qui gère l'expiration du temps
+*/
+void * f_thread_timer(void * arg)
+{
+  // toutes les secondes on vérifie si un timer a expiré
+  int i;
+
+  struct timeval tv;
+
+  while(42)
+  {
+    sleep(SLEEP_THREAD_TIMER);
+
+    if(gettimeofday(&tv) == -1)
+      erreur("gettimeofday");
+
+    for(i = 0; i < longueur; i++)
+    {
+      if(tableau[i].timer + TIMEOUT > tv.tv_sec);
+      // suppression(i);
+    }
+  }
+}
 
 int test_existance(char * ad, int p, char * hash)
 {
@@ -52,6 +78,29 @@ void ajout(char * ad, int p,char * hash)
   {
     free(ad);
     free(hash);
+  }
+}
+
+/*
+  Supprime l'entrée à l'index id du tableau d'association
+*/
+void suppression(int id)
+{
+  if(id < longueur)
+  {
+    int i;
+
+    free(tableau[id].hash);
+    free(tableau[id].addr);
+
+    for(i = id; i < longueur - 1; i++) // on décale tout le tableau après id
+    {
+      tableau[i] = tableau[i + 1];
+    }
+
+    longueur--;
+
+    tableau= realloc(tableau, longueur * sizeof(association));
   }
 }
 
@@ -83,10 +132,13 @@ char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total)
 {
   char * msg;
   struct sockaddr_in6 stock;
+
+  // si le code du message n'est pas le bon, on s'arrête
   if(buf[0] != code) return NULL;
+
+  // on récupère la longueur totale
   memcpy(lg_total,buf+1, 2);
-  msg= malloc((*lg_total)*sizeof(char));
-  memcpy(msg+1, buf+1, (*lg_total)-1);
+
   if(buf[3] != 50) return NULL;
   short unsigned int lg_hash= (unsigned short int)*(buf+4);
   char * hash= malloc((1+lg_hash)*sizeof(char));
@@ -198,6 +250,12 @@ int main(int argc, char **argv)
   }
 
   printf("listening on %s port %s\n", str, argv[2]);
+
+  // création du thread qui gère l'expiration du temps
+  pthread_t thread_timer;
+
+  if(pthread_create(&thread_timer, NULL, f_thread_timer, NULL) != 0)
+    exit(1);
 
   while(42)
   {
