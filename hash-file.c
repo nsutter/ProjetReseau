@@ -52,8 +52,9 @@ char * hashFichier(char * fichier)
 
 /* renvoie un tableau des hashs des chunks d'un fichier (1 chunk = 1 Mo)
   char * fichier = chemin du fichier
+  int * nb modifié par effet de bord, prend le nb. de chunks
 */
-char ** hashAllChunks(char * fichier)
+char ** hashAllChunks(char * fichier, int * nb)
 {
   FILE * fd = fopen(fichier, "r");
 
@@ -86,6 +87,8 @@ char ** hashAllChunks(char * fichier)
       snprintf(p[k], 3, "%02x", hashs[k][j]);
     }
   }
+
+  *nb = nChunks;
 
   fclose(fd);
 

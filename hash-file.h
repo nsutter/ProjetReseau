@@ -3,6 +3,6 @@
 
 long tailleFichier(FILE * fd);
 char * hashFichier(char * fichier);
-char ** hashAllChunks(char * fichier);
+char ** hashAllChunks(char * fichier, int * nb);
 
 #endif
