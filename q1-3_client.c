@@ -67,7 +67,7 @@ int main(int argc, char **argv)
   char buf[BUF_SIZE];
   socklen_t addrlen;
 
-  struct sockaddr_in6 my_addr; // in = internet
+  // struct sockaddr_in6 my_addr;
   struct sockaddr_in6 client;
   struct sockaddr_in6 dest;
 
@@ -86,9 +86,9 @@ int main(int argc, char **argv)
   }
 
   // init local addr structure and other params
-  my_addr.sin6_family      = AF_INET6;
-  my_addr.sin6_port        = htons(atoi(argv[3])); // transformation en uint16_t
-  my_addr.sin6_addr        = in6addr_any;
+  // my_addr.sin6_family      = AF_INET6;
+  // my_addr.sin6_port        = htons(atoi(argv[3])); // transformation en uint16_t
+  // my_addr.sin6_addr        = in6addr_any;
   addrlen                  = sizeof(struct sockaddr_in6);
 
   dest.sin6_family = AF_INET6;
@@ -101,11 +101,11 @@ int main(int argc, char **argv)
     dest.sin6_addr= getip(argv[1]);
   }
 
-  res = inet_pton(AF_INET6, "localhost", &(my_addr.sin6_addr));
-  if(res == 0)
-  {
-    my_addr.sin6_addr= getip(argv[1]);
-  }
+  // res = inet_pton(AF_INET6, "localhost", &(my_addr.sin6_addr));
+  // if(res == 0)
+  // {
+  //   my_addr.sin6_addr= getip(argv[1]);
+  // }
 
   char str[INET6_ADDRSTRLEN];
   if (inet_ntop(AF_INET6, &(dest.sin6_addr), str, INET6_ADDRSTRLEN) == NULL) {
@@ -115,14 +115,13 @@ int main(int argc, char **argv)
   memset(buf,'\0',1024);
 
   // bind addr structure with socket
-  if(bind(sockfd, (struct sockaddr *) &my_addr, addrlen) == -1)
+  if(bind(sockfd, (struct sockaddr *) &dest, addrlen) == -1)
   {
     perror("bind");
     close(sockfd);
     exit(EXIT_FAILURE);
   }
 
-  printf("listening on %s \n", argv[3]);
   char * msg;
   int lg_msg;
   int taille_cmp, taille_cmp_buf;
