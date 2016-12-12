@@ -107,6 +107,7 @@ char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total)
     msg= malloc((lg_hash+6)*sizeof(char));
     memcpy(msg+3, buf+3, lg_hash+3);
     get(msg, lg_hash+6);
+    ajout(adr, ntohs(stock.sin6_port), hash);
     memcpy(lg_total, msg+1, 2);
     *(lg_total) = *(lg_total)+1;
   }
