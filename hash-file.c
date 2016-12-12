@@ -102,7 +102,7 @@ char ** hashAllChunks(char * fichier, int * nb)
 //     exit(1);
 //   }
 //
-//   hashFichier(argv[1]);
+//   printf("%s", hashFichier(argv[1]));
 //
-//   hashAllChunks(argv[1]);
+//   // hashAllChunks(argv[1]);
 // }

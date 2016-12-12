@@ -16,6 +16,13 @@
 
 #define BUF_SIZE 1024
 
+void erreur(char *msg)
+{
+  printf("%s \n", msg);
+  perror("");
+  exit(-1);
+}
+
 int main(int argc, char ** argv)
 {
   int sockfd;
@@ -57,6 +64,9 @@ int main(int argc, char ** argv)
     if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
       erreur("recvfrom");
 
+    unsigned short int lg_total;
+    int new_lg=lg_total;
+
     if(buf[0] == 100) // get
     {
 
@@ -64,11 +74,11 @@ int main(int argc, char ** argv)
     else if(buf[0] == 102) // list
     {
       // on récupère le hash dans le msg list
-      unsigned short int lg_hash, lg_total;
+      unsigned short int lg_hash;
       memcpy(&lg_total, buf+1, 2);
       memcpy(&lg_hash, buf+4, 2);
       char * tmp_hash= malloc((lg_hash+1)*sizeof(char));
-      char[lg_hash]='\0';
+      tmp_hash[lg_hash]='\0';
 
       // on compare avec le hash de notre seeder
       if(strcmp(hash, tmp_hash) == 0)
@@ -76,7 +86,6 @@ int main(int argc, char ** argv)
         // envoyer la réponse avec les chunks
 
         unsigned short int i;
-        int new_lg=lg_total;
         msg= malloc(32*nbChunks*sizeof(char)+lg_total);
         memcpy(msg+3, buf+3,lg_total);
         msg[0]= 101;
@@ -84,12 +93,12 @@ int main(int argc, char ** argv)
         {
           msg[lg_total+i*37]=51;
           unsigned short int trentedeux= 32;
-          memcpy(msg+lg_total+1+i*37, trentedeux, 2);
+          memcpy(msg+lg_total+1+i*37, &trentedeux, 2);
           memcpy(msg+lg_total+3+i*37, allChunks[i], 32);
-          memcpy(msg+lg_total+35+i*37, i, 2);
+          memcpy(msg+lg_total+35+i*37, &i, 2);
           new_lg+=i;
         }
-        memcpy(msg+1, new_lg, 2);
+        memcpy(msg+1, &new_lg, 2);
       }
       else
       {

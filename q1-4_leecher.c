@@ -16,6 +16,14 @@
 
 #define BUF_SIZE 1024
 
+void erreur(char *msg)
+{
+  printf("%s \n", msg);
+  perror("");
+  exit(-1);
+}
+
+
 int main(int argc, char ** argv)
 {
   int sockfd;
@@ -28,7 +36,7 @@ int main(int argc, char ** argv)
   char * msg;
 
   // check the number of args on command line
-  if(argc != 5)
+  if(argc != 6)
   {
     printf("nombre d'arguments insuffisants \n");
     exit(-1);
@@ -64,19 +72,31 @@ int main(int argc, char ** argv)
   tmp= 32;
   memcpy(msg+4, &tmp, 2);
   memcpy(msg+6, argv[4], 32);
-  memset(buf, '\0', BUF_SIZE);
+  memset(buf, '0', BUF_SIZE);
   while(buf[0] != 103 && memcmp(msg+6, buf+6, 32) ==0)
   {
     if(sendto(sockfd, msg, 38, 0, (struct sockaddr *) &client, addrlen) == -1)
       erreur("sendto");
 
-    memset(buf, '\0', BUF_SIZE);
+    memset(buf, '0', BUF_SIZE);
 
     if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
       erreur("recvfrom");
 
   }
   printf("fin list chunk\n");
+  unsigned short int lg;
+  memcpy(&lg, buf+1, 2);
+  int i;
+  printf("%d\n", lg);
+  char * chunk= malloc(32);
+  for(i=38; i<lg; i++)
+  {
+    i=i+3;
+    memcpy(chunk, buf+i, 32);
+    printf("%s\n", chunk);
+    i=i+34;
+  }
   free(msg);
   while(42 == 42)
   {
@@ -85,7 +105,7 @@ int main(int argc, char ** argv)
 
     memset(buf, '\0', BUF_SIZE);
 
-    if(sendto(sockfd, msg, new_lg, 0, (struct sockaddr *) &client, addrlen) == -1)
+    if(sendto(sockfd, msg, BUF_SIZE, 0, (struct sockaddr *) &client, addrlen) == -1)
       erreur("sendto");
   }
 
