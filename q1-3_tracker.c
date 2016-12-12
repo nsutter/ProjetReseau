@@ -36,6 +36,7 @@ Supprime l'entrée à l'index id du tableau d'association
 */
 void suppression(int id)
 {
+  printf("suppression\n");
   if(id < longueur - 1)
   {
     int i;
@@ -73,18 +74,20 @@ void * f_thread_timer(void * arg)
 
   struct timeval tv;
 
-  while(42)
+  while(42 == 42)
   {
     sleep(SLEEP_THREAD_TIMER);
 
     if(gettimeofday(&tv, NULL) == -1)
       erreur("gettimeofday");
-
     for(i = 0; i < longueur; i++)
     {
-      if((tableau[i].timer + TIMEOUT) < tv.tv_sec)
+      if(tableau[i].timer + TIMEOUT < tv.tv_sec)
+      {
         suppression(i);
+      }
     }
+
   }
 }
 
@@ -95,11 +98,11 @@ int test_existance(char * ad, int p, char * hash)
   {
     if(strcmp(tableau[i].hash, hash) == 0 && strcmp(tableau[i].addr, ad) == 0 && tableau[i].port == p)
     {
+      printf("update\n");
       struct timeval tv;
       if(gettimeofday(&tv, NULL) == -1)
         erreur("gettimeofday");
       tableau[i].timer= tv.tv_sec;
-      return 1;
     }
   }
   return 0;
@@ -321,12 +324,17 @@ int main(int argc, char **argv)
         char * hash=malloc((lg_hash+1)*sizeof(char));
         memcpy(hash, buf+6, lg_hash);
         hash[lg_hash]='\0';
+        printf("%s\n", hash);
         char addr[INET6_ADDRSTRLEN];
         if (inet_ntop(AF_INET6, &(client.sin6_addr), addr, INET6_ADDRSTRLEN) == NULL)
           erreur("inet_ntop");
+        printf("%s %d %s\n", addr, ntohs(client.sin6_port), hash);
         test_existance(addr,ntohs(client.sin6_port),hash);
         free(hash);
+        // ack keep_alive
       }
+
+
     }
     memset(buf, '\0', BUF_SIZE);
   }

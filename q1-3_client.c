@@ -205,7 +205,7 @@ int main(int argc, char **argv)
   int lg_msg_keep_alive;
   char * msg_keep_alive = formatage_donnee(114, argv[5], my_addr, &lg_msg_keep_alive);
 
-  while(42 == 42)
+  while(270 == 270)
   {
     sleep(TIME_KEEP_ALIVE);
     memset(buf, 0, BUF_SIZE);
