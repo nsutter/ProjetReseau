@@ -65,7 +65,7 @@ int main(int argc, char ** argv)
       erreur("recvfrom");
 
     unsigned short int lg_total;
-    int new_lg=lg_total;
+    int new_lg;
 
     if(buf[0] == 100) // get
     {
@@ -76,28 +76,32 @@ int main(int argc, char ** argv)
       // on récupère le hash dans le msg list
       unsigned short int lg_hash;
       memcpy(&lg_total, buf+1, 2);
+      new_lg= lg_total;
       memcpy(&lg_hash, buf+4, 2);
       char * tmp_hash= malloc((lg_hash+1)*sizeof(char));
+      memcpy(tmp_hash, buf+6, lg_hash);
       tmp_hash[lg_hash]='\0';
 
+      printf("hash calculé : %s\n",hash);
+      printf("hash reçu : %s\n",tmp_hash);
       // on compare avec le hash de notre seeder
       if(strcmp(hash, tmp_hash) == 0)
       {
         // envoyer la réponse avec les chunks
-
         unsigned short int i;
-        msg= malloc(32*nbChunks*sizeof(char)+lg_total);
+        msg= malloc(69*nbChunks*sizeof(char)+lg_total+3);
         memcpy(msg+3, buf+3,lg_total);
         msg[0]= 101;
         for(i=0; i<nbChunks; i++)
         {
-          msg[lg_total+i*37]=51;
-          unsigned short int trentedeux= 32;
-          memcpy(msg+lg_total+1+i*37, &trentedeux, 2);
-          memcpy(msg+lg_total+3+i*37, allChunks[i], 32);
-          memcpy(msg+lg_total+35+i*37, &i, 2);
-          new_lg+=i;
+          msg[lg_total+3+i*69]=51;
+          unsigned short int impala= 64;
+          memcpy(msg+lg_total+4+i*69, &impala, 2);
+          memcpy(msg+lg_total+6+i*69, allChunks[i], 64);
+          memcpy(msg+lg_total+70+i*69, &i, 2);
+          new_lg= new_lg+69;
         }
+        new_lg++;
         memcpy(msg+1, &new_lg, 2);
       }
       else

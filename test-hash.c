@@ -11,11 +11,11 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  printf("%s : %s", argv[1], hashFichier(argv[1]);
+  printf("%s : %s\n", argv[1], hashFichier(argv[1]));
 
   int nb;
 
-  char res ** hashAllChunks(argv[1], &nb);
+  char ** res = hashAllChunks(argv[1], &nb);
 
   for(int i = 0; i < nb; i++)
   {

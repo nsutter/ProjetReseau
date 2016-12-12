@@ -33,7 +33,7 @@ int main(int argc, char ** argv)
   struct sockaddr_in6 my_addr; // in = internet
   struct sockaddr_in6 client;
   struct sockaddr_in6 dest;
-  char * msg;
+  unsigned char * msg;
 
   // check the number of args on command line
   if(argc != 6)
@@ -64,38 +64,39 @@ int main(int argc, char ** argv)
   if(bind(sockfd, (struct sockaddr *) &my_addr, addrlen) == -1)
     erreur("bind");
 
-  msg=malloc(38);
+  msg=malloc(70*sizeof(char));
   msg[0]=102;
-  unsigned short int tmp= 35;
+  unsigned short int tmp= 67;
   memcpy(msg+1, &tmp, 2);
   msg[3]=50;
-  tmp= 32;
+  tmp= 64;
   memcpy(msg+4, &tmp, 2);
-  memcpy(msg+6, argv[4], 32);
+  memcpy(msg+6, argv[4], 64);
   memset(buf, '0', BUF_SIZE);
-  while(buf[0] != 103 && memcmp(msg+6, buf+6, 32) ==0)
+  while(buf[0] != 103 && memcmp(msg+6, buf+6, 64) != 0)
   {
-    if(sendto(sockfd, msg, 38, 0, (struct sockaddr *) &client, addrlen) == -1)
+    int size_msg=70;
+    if(sendto(sockfd, msg, size_msg, 0, (struct sockaddr *) &dest, addrlen) == -1)
       erreur("sendto");
 
     memset(buf, '0', BUF_SIZE);
 
     if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
       erreur("recvfrom");
-
   }
   printf("fin list chunk\n");
   unsigned short int lg;
   memcpy(&lg, buf+1, 2);
   int i;
   printf("%d\n", lg);
-  char * chunk= malloc(32);
-  for(i=38; i<lg; i++)
+  char * chunk= malloc(65);
+  for(i=70; i<lg; i++)
   {
     i=i+3;
-    memcpy(chunk, buf+i, 32);
+    memcpy(chunk, buf+i, 64);
+    chunk[64]='\0';
     printf("%s\n", chunk);
-    i=i+34;
+    i=i+65;
   }
   free(msg);
   while(42 == 42)
