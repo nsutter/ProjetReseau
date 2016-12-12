@@ -55,7 +55,7 @@ int main(int argc, char **argv)
   char buf[BUF_SIZE];
   socklen_t addrlen;
 
-  struct sockaddr_in6 my_addr; // in = internet
+  struct sockaddr_in6 my_addr;
   struct sockaddr_in6 client;
   struct sockaddr_in6 dest;
 
@@ -89,11 +89,6 @@ int main(int argc, char **argv)
     dest.sin6_addr= getip(argv[1]);
   }
 
-  res = inet_pton(AF_INET6, "localhost", &(my_addr.sin6_addr));
-  if(res == 0)
-  {
-    my_addr.sin6_addr= getip(argv[1]);
-  }
 
   char str[INET6_ADDRSTRLEN];
   if (inet_ntop(AF_INET6, &(dest.sin6_addr), str, INET6_ADDRSTRLEN) == NULL) {
