@@ -36,7 +36,7 @@ Supprime l'entrée à l'index id du tableau d'association
 */
 void suppression(int id)
 {
-  if(id < longueur)
+  if(id < longueur - 1)
   {
     int i;
 
@@ -50,7 +50,16 @@ void suppression(int id)
 
     longueur--;
 
-    tableau= realloc(tableau, longueur * sizeof(association));
+    tableau = realloc(tableau, longueur * sizeof(association));
+  }
+  else if(id == longueur - 1)
+  {
+    free(tableau[id].hash);
+    free(tableau[id].addr);
+
+    longueur--;
+
+    tableau = realloc(tableau, longueur * sizeof(association));
   }
 }
 
@@ -73,7 +82,7 @@ void * f_thread_timer(void * arg)
 
     for(i = 0; i < longueur; i++)
     {
-      if(tableau[i].timer + TIMEOUT > tv.tv_sec)
+      if((tableau[i].timer + TIMEOUT) < tv.tv_sec)
         suppression(i);
     }
   }
@@ -90,6 +99,7 @@ int test_existance(char * ad, int p, char * hash)
       if(gettimeofday(&tv, NULL) == -1)
         erreur("gettimeofday");
       tableau[i].timer= tv.tv_sec;
+      return 1;
     }
   }
   return 0;
@@ -104,6 +114,10 @@ void ajout(char * ad, int p,char * hash)
     tableau[longueur-1].hash= hash;
     tableau[longueur-1].addr= ad;
     tableau[longueur-1].port= p;
+    struct timeval tv;
+    if(gettimeofday(&tv, NULL) == -1)
+      erreur("gettimeofday");
+    tableau[longueur-1].timer= tv.tv_sec;
   }
   else
   {
@@ -300,20 +314,19 @@ int main(int argc, char **argv)
     {
       unsigned short int lg;
       memcpy(&lg, buf+1, 2);
-      if(buf[3] == 1)
+      if(buf[3] == 50)
       {
         unsigned short int lg_hash;
         memcpy(&lg_hash, buf+4, 2);
-        char * hash=malloc(lg_hash*sizeof(char));
-        memcpy(&hash, buf+6, lg_hash);
+        char * hash=malloc((lg_hash+1)*sizeof(char));
+        memcpy(hash, buf+6, lg_hash);
+        hash[lg_hash]='\0';
         char addr[INET6_ADDRSTRLEN];
         if (inet_ntop(AF_INET6, &(client.sin6_addr), addr, INET6_ADDRSTRLEN) == NULL)
           erreur("inet_ntop");
         test_existance(addr,ntohs(client.sin6_port),hash);
         free(hash);
       }
-
-
     }
     memset(buf, '\0', BUF_SIZE);
   }
