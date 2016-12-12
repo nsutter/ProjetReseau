@@ -15,7 +15,7 @@
 #define BUF_SIZE 1024
 
 //associe a un hash une liste d'ip + port
-typedef struct {char * hash; char * addr; int port;} association;
+typedef struct {char * hash; char * addr; int port; time_t timer;} association;
 
 void erreur(char *msg)
 {
