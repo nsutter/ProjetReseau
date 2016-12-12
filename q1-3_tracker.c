@@ -11,7 +11,6 @@
 #include <inttypes.h>
 #include <sys/time.h>
 #include <pthread.h>
-
 #include "dns_solve.h"
 
 #define BUF_SIZE 1024
@@ -28,6 +27,9 @@ void erreur(char *msg)
   exit(-1);
 }
 
+// mutex pour protéger le tableau des associations et l'entier longueur à cause du thread qui gère l'expiration du temps
+pthread_mutex_t mutex_association;
+
 association * tableau;
 int longueur=0;
 
@@ -36,7 +38,6 @@ Supprime l'entrée à l'index id du tableau d'association
 */
 void suppression(int id)
 {
-  printf("suppression\n");
   if(id < longueur - 1)
   {
     int i;
@@ -80,6 +81,9 @@ void * f_thread_timer(void * arg)
 
     if(gettimeofday(&tv, NULL) == -1)
       erreur("gettimeofday");
+
+    pthread_mutex_lock(&mutex_association);
+
     for(i = 0; i < longueur; i++)
     {
       if(tableau[i].timer + TIMEOUT < tv.tv_sec)
@@ -88,23 +92,29 @@ void * f_thread_timer(void * arg)
       }
     }
 
+    pthread_mutex_unlock(&mutex_association);
   }
 }
 
 int test_existance(char * ad, int p, char * hash)
 {
   int i;
+
+  pthread_mutex_lock(&mutex_association);
+
   for(i=0; i<longueur; i++)
   {
     if(strcmp(tableau[i].hash, hash) == 0 && strcmp(tableau[i].addr, ad) == 0 && tableau[i].port == p)
     {
-      printf("update\n");
       struct timeval tv;
       if(gettimeofday(&tv, NULL) == -1)
         erreur("gettimeofday");
       tableau[i].timer= tv.tv_sec;
     }
   }
+
+  pthread_mutex_unlock(&mutex_association);
+
   return 0;
 }
 
@@ -112,7 +122,9 @@ void ajout(char * ad, int p,char * hash)
 {
   if(test_existance(ad, p, hash) == 0)
   {
-    longueur= longueur +1;
+    pthread_mutex_lock(&mutex_association);
+
+    longueur= longueur+1;
     tableau= realloc(tableau, longueur * sizeof(association));
     tableau[longueur-1].hash= hash;
     tableau[longueur-1].addr= ad;
@@ -121,6 +133,8 @@ void ajout(char * ad, int p,char * hash)
     if(gettimeofday(&tv, NULL) == -1)
       erreur("gettimeofday");
     tableau[longueur-1].timer= tv.tv_sec;
+
+    pthread_mutex_unlock(&mutex_association);
   }
   else
   {
@@ -134,6 +148,9 @@ void get(char * msg, unsigned short int lg)
 {
   int i;
   unsigned short int lg_hash= lg-6;
+
+  pthread_mutex_lock(&mutex_association);
+
   for(i=0; i<longueur; i++)
   {
     if(strncmp(msg+6, tableau[i].hash, lg_hash) == 0)
@@ -151,6 +168,9 @@ void get(char * msg, unsigned short int lg)
       memcpy(msg+lg-16, &(sa.sin6_addr), 16);
     }
   }
+
+  pthread_mutex_unlock(&mutex_association);
+
   memcpy(msg+1, &lg, 2);
 }
 
@@ -195,10 +215,15 @@ char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total)
 void affiche()
 {
   int i;
+
+  pthread_mutex_lock(&mutex_association);
+
   for(i=0; i<longueur; i++)
   {
     printf("%s %d %s\n", tableau[i].hash, tableau[i].port, tableau[i].addr);
   }
+
+  pthread_mutex_unlock(&mutex_association);
 }
 
 // renvoi 1 si le couple hash ip existe déjà
@@ -257,7 +282,7 @@ int main(int argc, char **argv)
     my_addr.sin6_addr= getip(argv[1]);
   }
 
-
+  pthread_mutex_init(&mutex_association, NULL);
 
   char str[INET6_ADDRSTRLEN];
   if (inet_ntop(AF_INET6, &(my_addr.sin6_addr), str, INET6_ADDRSTRLEN) == NULL) {
