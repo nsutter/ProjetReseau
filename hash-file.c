@@ -37,7 +37,7 @@ char * hashFichier(char * fichier)
 
   gcry_md_hash_buffer(GCRY_MD_SHA256, hash, buffer, taille);
 
-  // AFFICHAGE DU HASH
+  // COPIE DU HASH
   char * sortie = malloc(sizeof(char) * ((32 * 2) + 1)), * p = sortie;
 
   for(int i = 0; i < 32; i++, p += 2) // hash converti
@@ -50,7 +50,10 @@ char * hashFichier(char * fichier)
   return sortie;
 }
 
-char ** hashChunks(char * fichier)
+/* renvoie un tableau des hashs des chunks d'un fichier (1 chunk = 1 Mo)
+  char * fichier = chemin du fichier
+*/
+char ** hashAllChunks(char * fichier)
 {
   FILE * fd = fopen(fichier, "r");
 
@@ -62,7 +65,7 @@ char ** hashChunks(char * fichier)
 
   unsigned char ** hashs = malloc(nChunks * sizeof(unsigned char *)); // tableau des hashs calculés
   char ** sorties = malloc(nChunks * sizeof(char *)); // tableau des hashs convertis
-  char ** p = malloc(nChunks * sizeof(char *)); // tableau hashs convertis (seconde référence pour l'affichage)
+  char ** p = malloc(nChunks * sizeof(char *)); // tableau des hashs convertis (seconde référence pour la conversion)
 
   for(int i = 0; i < nChunks; i++)
   {
@@ -86,22 +89,17 @@ char ** hashChunks(char * fichier)
 
   fclose(fd);
 
-  for(int a = 0; a < nChunks; a++)
-  {
-    printf("CHUNK %d : %s\n", a, sorties[a]);
-  }
-
   return sorties;
 }
 
-int main(int argc, char *argv[])
-{
-  if(argc != 2)
-  {
-    exit(1);
-  }
-
-  printf("%s : %s\n", argv[1], hashFichier(argv[1]));
-
-  hashChunks(argv[1]);
-}
+// int main(int argc, char *argv[])
+// {
+//   if(argc != 2)
+//   {
+//     exit(1);
+//   }
+//
+//   hashFichier(argv[1]);
+//
+//   hashAllChunks(argv[1]);
+// }
