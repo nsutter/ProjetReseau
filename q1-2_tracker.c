@@ -79,7 +79,7 @@ void get(char * msg, unsigned short int lg)
   memcpy(msg+1, &lg, 2);
 }
 
-char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total)
+char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total, struct sockaddr_in6  *client)
 {
   char * msg;
   struct sockaddr_in6 stock;
@@ -96,6 +96,8 @@ char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total)
   memcpy(&stock.sin6_addr, buf+lg_hash+11, 16);
   char *adr= malloc(sizeof(INET6_ADDRSTRLEN));
   adr= (char * ) inet_ntop(AF_INET6, &(stock.sin6_addr), adr, INET6_ADDRSTRLEN);
+  client->sin6_port= stock.sin6_port;
+  client->sin6_addr= stock.sin6_addr;
   if(code == 110)
   {
     ajout(adr, ntohs(stock.sin6_port), hash);
@@ -208,7 +210,7 @@ int main(int argc, char **argv)
       short unsigned int lg;
       char * msg= NULL;
       char code= 110;
-      msg= deformatage(buf, code, &lg);
+      msg= deformatage(buf, code, &lg, &client);
       msg[0]=111;
       if(sendto(sockfd, msg, lg, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       free(msg);
@@ -218,7 +220,7 @@ int main(int argc, char **argv)
       short unsigned int lg;
       char * msg= NULL;
       char code= 112;
-      msg= deformatage(buf, code, &lg);
+      msg= deformatage(buf, code, &lg, &client);
       msg[0]=113;
       short unsigned int tmp;
       memcpy(&tmp, msg+4, 2);
