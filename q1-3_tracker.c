@@ -331,7 +331,10 @@ int main(int argc, char **argv)
         printf("%s %d %s\n", addr, ntohs(client.sin6_port), hash);
         test_existance(addr,ntohs(client.sin6_port),hash);
         free(hash);
-        // ack keep_alive
+        char * msg= malloc((6+lg_hash)*sizeof(char));
+        memcpy(msg, &buf, 6+lg_hash);
+        msg[0]=115;
+        if(sendto(sockfd, msg, 6+lg_hash, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       }
 
 
