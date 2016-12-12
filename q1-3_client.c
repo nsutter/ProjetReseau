@@ -85,7 +85,7 @@ int main(int argc, char **argv)
     exit(EXIT_FAILURE);
   }
 
-  init local addr structure and other params
+  // init local addr structure and other params
   my_addr.sin6_family      = AF_INET6;
   my_addr.sin6_port        = htons(atoi(argv[3])); // transformation en uint16_t
   my_addr.sin6_addr        = in6addr_any;
