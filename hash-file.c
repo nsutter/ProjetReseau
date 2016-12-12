@@ -94,15 +94,3 @@ char ** hashAllChunks(char * fichier, int * nb)
 
   return sorties;
 }
-
-// int main(int argc, char *argv[])
-// {
-//   if(argc != 2)
-//   {
-//     exit(1);
-//   }
-//
-//   printf("%s", hashFichier(argv[1]));
-//
-//   // hashAllChunks(argv[1]);
-// }
