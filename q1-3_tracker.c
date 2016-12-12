@@ -86,7 +86,7 @@ void * f_thread_timer(void * arg)
 
     for(i = 0; i < longueur; i++)
     {
-      if(tableau[i].timer + TIMEOUT < tv.tv_sec)
+      if((tableau[i].timer + TIMEOUT) < tv.tv_sec)
       {
         suppression(i);
       }
@@ -104,7 +104,7 @@ int test_existance(char * ad, int p, char * hash)
 
   for(i=0; i<longueur; i++)
   {
-    if(strcmp(tableau[i].hash, hash) == 0 && strcmp(tableau[i].addr, ad) == 0 && tableau[i].port == p)
+    if(strncmp(tableau[i].hash, hash, strlen(hash)) == 0 && strcmp(tableau[i].addr, ad) == 0 && tableau[i].port == p)
     {
       struct timeval tv;
       if(gettimeofday(&tv, NULL) == -1)
@@ -174,7 +174,7 @@ void get(char * msg, unsigned short int lg)
   memcpy(msg+1, &lg, 2);
 }
 
-char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total)
+char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total, struct sockaddr_in6 client)
 {
   char * msg;
   struct sockaddr_in6 stock;
@@ -192,8 +192,8 @@ char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total)
   hash[lg_hash]='\0';
   memcpy(&stock.sin6_port, buf+lg_hash+9, 2);
   memcpy(&stock.sin6_addr, buf+lg_hash+11, 16);
-  char *adr= malloc(sizeof(INET6_ADDRSTRLEN));
-  adr= (char * ) inet_ntop(AF_INET6, &(stock.sin6_addr), adr, INET6_ADDRSTRLEN);
+  char *adr= malloc(INET6_ADDRSTRLEN*sizeof(char));
+  adr= (char * ) inet_ntop(AF_INET6, &(client.sin6_addr), adr, INET6_ADDRSTRLEN);
   if(code == 110)
   {
     ajout(adr, ntohs(stock.sin6_port), hash);
@@ -317,7 +317,7 @@ int main(int argc, char **argv)
       short unsigned int lg;
       char * msg= NULL;
       char code= 110;
-      msg= deformatage(buf, code, &lg);
+      msg= deformatage(buf, code, &lg, client);
       msg[0]=111;
       if(sendto(sockfd, msg, lg, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       free(msg);
@@ -327,7 +327,7 @@ int main(int argc, char **argv)
       short unsigned int lg;
       char * msg= NULL;
       char code= 112;
-      msg= deformatage(buf, code, &lg);
+      msg= deformatage(buf, code, &lg, client);
       msg[0]=113;
       short unsigned int tmp;
       memcpy(&tmp, msg+4, 2);
@@ -349,11 +349,9 @@ int main(int argc, char **argv)
         char * hash=malloc((lg_hash+1)*sizeof(char));
         memcpy(hash, buf+6, lg_hash);
         hash[lg_hash]='\0';
-        printf("%s\n", hash);
         char addr[INET6_ADDRSTRLEN];
         if (inet_ntop(AF_INET6, &(client.sin6_addr), addr, INET6_ADDRSTRLEN) == NULL)
           erreur("inet_ntop");
-        printf("%s %d %s\n", addr, ntohs(client.sin6_port), hash);
         test_existance(addr,ntohs(client.sin6_port),hash);
         free(hash);
         char * msg= malloc((6+lg_hash)*sizeof(char));

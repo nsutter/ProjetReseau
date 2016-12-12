@@ -8,7 +8,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-
+ #include <ifaddrs.h>
 #include "dns_solve.h"
 
 #define BUF_SIZE 1024
@@ -209,6 +209,7 @@ int main(int argc, char **argv)
       memset(buf, 0, BUF_SIZE);
       if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
         erreur("recvfrom");
+      sleep(TIME_KEEP_ALIVE);
     }
   }
 
