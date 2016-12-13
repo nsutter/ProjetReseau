@@ -11,7 +11,8 @@ long tailleFichier(FILE * fd)
 
   if(fd)
   {
-    fseek(fd, 0, SEEK_END);
+    if(fseek(fd, 0, SEEK_END) == -1) // ERREUR ICI ...
+      perror("fseek");
     taille = ftell(fd);
     fseek(fd, 0, SEEK_SET);
   }
@@ -25,6 +26,11 @@ long tailleFichier(FILE * fd)
 char * hashFichier(char * fichier)
 {
   FILE * fd = fopen(fichier, "r");
+
+  if(fd == NULL)
+  {
+    exit(1);
+  }
 
   long taille = tailleFichier(fd);
 

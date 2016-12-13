@@ -55,12 +55,18 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
 {
   printf("hashChunkEntree : %s\n", hashChunkEntree);
 
+  printf("deubt %s\n", fichier);
+  printf("%s\n", hashFichier(fichier));
+  printf("fin\n");
+
   // on s'arrête si le fichier demandé n'est pas le fichier proposé
   if(strcmp(hashFichierEntree, hashFichier(fichier)) != 0)
   {
     printf("recuperation_fragment: hash du message et hash du fichier différent.");
     exit(1);
   }
+
+  printf("1\n");
 
   // on récupère l'index
   int iChunk = indexChunk(hashChunkEntree, fichier); // ou int iChunk = index;
@@ -70,6 +76,8 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
     printf("indexChunk: échec de la récupération de l'index.");
     exit(1);
   }
+
+  printf("2\n");
 
   int i, fd = open(fichier, O_RDONLY);
 
@@ -90,7 +98,7 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
     nOctetsEnvoi = tFichier - (index) * TAILLE_CHUNK; // cas où on envoie le dernier chunk <=> < 1 000 000 octets
   }
 
-  printf("nOctetsEnvoi : %d\n", nOctetsEnvoi);
+  // printf("nOctetsEnvoi : %d\n", nOctetsEnvoi);
 
   int nEnvoi = nOctetsEnvoi / TAILLE_FRAGMENT; // nombre de paquets qu'on doit envoyer pour envoyer nOctetsEnvoi octets
 
@@ -100,6 +108,7 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
   }
 
   // création du tableau
+
   fragments * tabFragments = malloc(nEnvoi * sizeof(fragments));
 
   if(lseek(fd, iFichier, SEEK_SET) == -1)
@@ -250,7 +259,6 @@ int main(int argc, char ** argv)
       }
       free(tmp_hash);
       free(hash_chunk);
-      free(tabFragments);
     }
     else if(buf[0] == 102) // list
     {
