@@ -140,6 +140,7 @@ int main(int argc, char ** argv)
   memcpy(msg+4, &tmp, 2);
   memcpy(msg, argv[4], 64);
 
+  int pos_ecriture=0;
   for(i=0; i<nbChunk; i++)
   {
     msg[70]=51;
@@ -152,11 +153,33 @@ int main(int argc, char ** argv)
       erreur("sendto");
 
     memset(buf, '\0', BUF_SIZE);
-    while(/*on recupere tous les fragements*/)
+    int nb_part=2;
+    int nb_courant=1;
+    while(nb_courant <= nb_part)
     {
       memset(buf, '\0', BUF_SIZE);
       if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
-      erreur("recvfrom");
+        erreur("recvfrom");
+      if(memcpy(buf+1, msg+1, 138) != 0)
+        continue;
+      if(buf[139] != 60)
+        continue;
+      unsigned short int nb_courant_buf;
+      unsigned short int lg;
+      memcpy(&lg, buf+140, 2);
+      memcpy(&nb_courant_buf, buf+142, 2);
+      if(nb_courant_buf != nb_courant)
+      {
+        i--;
+        break;
+      }
+      memcpy(&nb_part, buf+144, 2);
+      char buf_ecriture= malloc((lg-3)*sizeof(char));
+      memcpy(buf_ecriture, buf+146, lg-4);
+      buf_ecriture[lg-4]= '\0';
+      pos_ecriture= pos_ecriture+lg-4;
+      //faire write dans le fichier;
+      // envoyer ack
     }
   }
 
