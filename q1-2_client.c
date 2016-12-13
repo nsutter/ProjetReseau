@@ -20,6 +20,7 @@ void erreur(char *msg)
   exit(-1);
 }
 
+/* Formate une adresse IP en texte */
 char * formatage_ip(struct sockaddr_in6 my_addr)
 {
   char * retour= malloc(21*sizeof(char));

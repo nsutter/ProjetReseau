@@ -160,7 +160,7 @@ int main(int argc, char **argv)
   struct sockaddr_in6 my_addr; // in = internet
   struct sockaddr_in6 client;
 
-  // check the number of args on command line
+  // vérification des arguments
   if(argc != 3)
   {
     printf("./q1-2_tracker traddr trport\n");
