@@ -18,6 +18,8 @@
 
 #define TAILLE_FRAGMENT 800
 
+#define TAILLE_CHUNK 1000000
+
 void erreur(char *msg)
 {
   printf("%s \n", msg);
@@ -31,11 +33,12 @@ void erreur(char *msg)
   index : index du segment
   data : données
   fichier : chemin du fichier à écrire
+  i : le numéro
 */
-void ecriture_fragment(int index, char * data, int fd)
+void ecriture_fragment(int index, char * data, int fd, int i)
 {
   // TAILLE_FRAGMENT
-  if(lseek(fd, index * TAILLE_FRAGMENT, SEEK_SET) == -1)
+  if(lseek(fd, i * TAILLE_CHUNK + index * TAILLE_FRAGMENT, SEEK_SET) == -1)
     erreur("lseek - ecriture_chunk");
 
   if(write(fd, data, strlen(data)) == -1)
@@ -140,7 +143,6 @@ int main(int argc, char ** argv)
     tmp=66;
     memcpy(msg+71, &tmp, 2);
     memcpy(msg+73, tab[i], 64);
-    printf("%s\n", tab[i]);
     memcpy(msg+137, &i, 2);
     if(sendto(sockfd, msg, 139, 0, (struct sockaddr *) &dest, addrlen) == -1)
       erreur("sendto");
@@ -170,7 +172,7 @@ int main(int argc, char ** argv)
       memcpy(buf_ecriture, buf+146, lg-4);
       buf_ecriture[lg-4]= '\0';
       pos_ecriture= pos_ecriture+lg-4;
-      ecriture_fragment(nb_courant, buf_ecriture, fd);
+      ecriture_fragment(nb_courant, buf_ecriture, fd, i);
       nb_courant++;
     } while(nb_courant < nb_part);
   }

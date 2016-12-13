@@ -53,6 +53,8 @@ int indexChunk(char * hashChunkEntree, char * fichier)
 // tabFragments modifié par effet de bord
 fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntree, char * fichier, int index)
 {
+  printf("hashChunkEntree : %s\n", hashChunkEntree);
+
   // on s'arrête si le fichier demandé n'est pas le fichier proposé
   if(strcmp(hashFichierEntree, hashFichier(fichier)) != 0)
   {
@@ -77,6 +79,7 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
 
   int nOctetsEnvoi; // nombre d'octets au total qu'on veut envoyer
 
+  printf("")
   if(tFichier - iFichier > TAILLE_CHUNK)
   {
     nOctetsEnvoi = TAILLE_CHUNK; // cas où on envoie un chunk complet <=> 1 000 000 octets
@@ -174,7 +177,6 @@ int main(int argc, char ** argv)
 
     if(buf[0] == 100) // get
     {
-      printf("yolo\n");
       memcpy(&lg_total, buf+1, 2);
       new_lg= lg_total;
       if(buf[3] != 50)
@@ -183,10 +185,8 @@ int main(int argc, char ** argv)
       char * tmp_hash= malloc((lg_hash+1)*sizeof(char));
       memcpy(tmp_hash, buf+6, lg_hash);
       tmp_hash[lg_hash]='\0';
-      printf("ok\n");
       if(buf[6+lg_hash]!= 51)
         continue;
-      printf("on arrive ici\n");
       unsigned short int size_hash;
       memcpy(&size_hash, buf+lg_hash+7, 2);
       size_hash=size_hash-2;
@@ -198,11 +198,6 @@ int main(int argc, char ** argv)
       fragments * tabFragments=NULL;
 
       tabFragments = recuperation_fragment(tmp_hash, hash_chunk, argv[2], index);
-      if(tabFragments ==NULL)printf("théo est un intelligent\n");
-      printf("debut\n");
-      tabFragments[0].data[799]='\0';
-      printf("%s\n", tabFragments[0].data);
-      printf("passe\n");
       unsigned short int i;
       unsigned short int nb_segment= tabFragments[0].idmax;
       unsigned short int taille_frag= TAILLE_FRAGMENT;
@@ -213,16 +208,15 @@ int main(int argc, char ** argv)
       fragment[11+lg_hash+size_hash]=60;
       memcpy(fragment+11+lg_hash+size_hash+1, &taille_frag, 2);
       memcpy(fragment+1, &lg_total, 2);
+      printf("debut\n");
       for(i=0; i<nb_segment; i++)
       {
-        printf("envoi chunk bout:%d\n", i);
         memcpy(fragment+11+lg_hash+size_hash+3, &i, 2);
         memcpy(fragment+11+lg_hash+size_hash+5, &nb_segment, 2);
         memcpy(fragment+11+lg_hash+size_hash+7, tabFragments[i].data, taille_frag);
         if(sendto(sockfd, fragment, lg_total, 0, (struct sockaddr *) &client, addrlen) == -1)
           erreur("sendto");
       }
-      printf("envoi chunk bout:%d\n", i);
       unsigned short int taille_dernier= strlen(tabFragments[i].data);
       lg_total= 11+lg_hash+size_hash+7+taille_dernier;
       memcpy(fragment+1, &lg_total, 2);
