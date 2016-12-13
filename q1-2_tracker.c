@@ -84,11 +84,17 @@ void get(char * msg, unsigned short int lg)
   memcpy(msg+1, &lg, 2);
 }
 
-char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total, struct sockaddr_in6  *client)
+//prends en argument un buf contenant le message reçu, le char code correspondant
+// au type de message, un entier longueur totale qui est modifié par effet de bord
+// et un sockaddr client qui contient les infos du client
+char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total, struct sockaddr_in6 client)
 {
+  //on extrait les données dans buf
   char * msg;
   struct sockaddr_in6 stock;
+  // test si on a bien le type attendu
   if(buf[0] != code) return NULL;
+  //copie de la longueur du message
   memcpy(lg_total,buf+1, 2);
   msg= malloc((*lg_total)*sizeof(char));
   memcpy(msg+1, buf+1, (*lg_total)-1);
@@ -100,17 +106,22 @@ char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total,
   memcpy(&stock.sin6_port, buf+lg_hash+9, 2);
   memcpy(&stock.sin6_addr, buf+lg_hash+11, 16);
   char *adr= malloc(sizeof(INET6_ADDRSTRLEN));
-  adr= (char * ) inet_ntop(AF_INET6, &(stock.sin6_addr), adr, INET6_ADDRSTRLEN);
-  client->sin6_port= stock.sin6_port;
-  client->sin6_addr= stock.sin6_addr;
+  //j'utilise l'ip obtenue avec revfrom car celle dans le message est fausse
+  adr= (char * ) inet_ntop(AF_INET6, &(client.sin6_addr), adr, INET6_ADDRSTRLEN);
+
+
   if(code == 110)
   {
+    //si c'est un code 110 on ajoute l'ip + hash + port et on renvoi msg qui a
+    // juste le code de debut qui diffère du message reçu
     ajout(adr, ntohs(stock.sin6_port), hash);
     msg= malloc((*lg_total)*sizeof(char));
     memcpy(msg+1, buf+1, (*lg_total)-1);
   }
   else if(code == 112)
   {
+    //si le code est 112 on ajout l'ip, on copie le contenu du buf dans msg et on
+    // y ajoute les ip et port qui correspondent au hash demander.
     msg= malloc((lg_hash+6)*sizeof(char));
     memcpy(msg+3, buf+3, lg_hash+3);
     get(msg, lg_hash+6);
@@ -121,6 +132,7 @@ char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total,
   return msg;
 }
 
+// affiche toutes les données qu'a le tracker
 void affiche()
 {
   int i;
@@ -130,26 +142,6 @@ void affiche()
   }
 }
 
-// renvoi 1 si le couple hash ip existe déjà
-
-char * concat(char* str1, char * str2)
-{
-  int lg1= strlen(str1);
-  int lg2= strlen(str2);
-  char * res= malloc(sizeof((lg1+lg2+2)*sizeof(char)));
-  int i;
-  for(i=0; i<lg1; i++)
-  {
-    res[i]=str1[i];
-  }
-  res[lg1]=' ';
-  for(i=1; i<=lg2; i++)
-  {
-    res[i+lg1]= str2[i-1];
-  }
-  res[lg1+lg2+1]= '\0';
-  return res;
-}
 
 int main(int argc, char **argv)
 {
@@ -215,7 +207,8 @@ int main(int argc, char **argv)
       short unsigned int lg;
       char * msg= NULL;
       char code= 110;
-      msg= deformatage(buf, code, &lg, &client);
+      msg= deformatage(buf, code, &lg, client);
+      // on modifier le code pour qu'il corresponde a un get
       msg[0]=111;
       if(sendto(sockfd, msg, lg, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       free(msg);
@@ -225,7 +218,8 @@ int main(int argc, char **argv)
       short unsigned int lg;
       char * msg= NULL;
       char code= 112;
-      msg= deformatage(buf, code, &lg, &client);
+      msg= deformatage(buf, code, &lg, client);
+      // on modifier le code pour qu'il corresponde a un get
       msg[0]=113;
       short unsigned int tmp;
       memcpy(&tmp, msg+4, 2);

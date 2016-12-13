@@ -21,6 +21,7 @@ void erreur(char *msg)
   exit(-1);
 }
 
+/* Formate une adresse IP en texte */
 char * formatage_ip(struct sockaddr_in6 my_addr)
 {
   char * retour= malloc(21*sizeof(char));
@@ -32,6 +33,7 @@ char * formatage_ip(struct sockaddr_in6 my_addr)
   return retour;
 }
 
+// formate un hash suivi de l'adresse
 char * formatage_donnee(char type, char * hash_f, struct sockaddr_in6 my_addr, int * lg_msg)
 {
   char * retour;

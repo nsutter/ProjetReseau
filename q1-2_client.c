@@ -32,6 +32,7 @@ char * formatage_ip(struct sockaddr_in6 my_addr)
   return retour;
 }
 
+// formate un hash suivi de l'adresse
 char * formatage_donnee(char type, char * hash_f, struct sockaddr_in6 my_addr, int * lg_msg)
 {
   char * retour;
@@ -47,6 +48,7 @@ char * formatage_donnee(char type, char * hash_f, struct sockaddr_in6 my_addr, i
   memcpy(retour+6, hash_f, lg);
   char * tmp= formatage_ip(my_addr);
   memcpy(retour+6+lg, tmp, 21);
+  free(tmp);
   return retour;
 }
 
@@ -61,7 +63,7 @@ int main(int argc, char **argv)
   struct sockaddr_in6 dest;
 
   // check the number of args on command line
-  if(argc != 6)
+  if(argc != 6 || (argc != 5 && strncmp(argv[4], "aff", 3) == 0))
   {
     printf("usage: ./q1-2_client traddr trport clport type hash\n");
     exit(-1);
@@ -141,6 +143,8 @@ int main(int argc, char **argv)
   printf("%s %s from %s port %s\n", argv[4], argv[5], str, argv[2]);
 
   memset(buf, '\0', BUF_SIZE);
+  //temps que le code de retour n'est pas le bon et le message de retour ne
+  // correspond pas a ce qu'on attends on envoie
   while(memcmp(buf+shift, msg+shift, taille_cmp) != 0 && buf[0]+1 != msg[0])
   {
     if(sendto(sockfd, msg, lg_msg, 0, (struct sockaddr *) &dest, addrlen) == -1)
@@ -164,6 +168,7 @@ int main(int argc, char **argv)
   }
   free(msg);
 
+  //si on a fait une requete get on affiche les clients
   if(strncmp(argv[4], "get", 3) == 0)
   {
     short unsigned int lg_total;
@@ -183,6 +188,7 @@ int main(int argc, char **argv)
       char *adr= malloc(sizeof(INET6_ADDRSTRLEN));
       adr= (char * ) inet_ntop(AF_INET6, &(stock.sin6_addr), adr, INET6_ADDRSTRLEN);
       printf("IP: %s Port: %d\n", adr, ntohs(stock.sin6_port));
+      free(adr);
     }
   }
 
