@@ -32,7 +32,7 @@ void erreur(char *msg)
   data : données
   fichier : chemin du fichier à écrire
 */
-void ecriture_chunk(int len, int index, char * data, char * fichier)
+void ecriture_fragment(int len, int index, char * data, char * fichier)
 {
   int fd = open(fichier, O_RDWR | O_CREAT, 0666);
 
