@@ -16,6 +16,8 @@
 
 #define BUF_SIZE 1024
 
+#define TAILLE_FRAGMENT 900
+
 void erreur(char *msg)
 {
   printf("%s \n", msg);
@@ -23,6 +25,29 @@ void erreur(char *msg)
   exit(-1);
 }
 
+/*
+  Écrit dans le fichier "char * fichier" les données data du paquet d'index "int index"
+  len : longueur des données + en-tête du segment
+  index : index du segment
+  data : données
+  fichier : chemin du fichier à écrire
+*/
+void ecriture_chunk(int len, int index, char * data, char * fichier)
+{
+  int fd = open(fichier, O_RDWR | O_CREAT, 0666);
+
+  if(fd == -1) erreur("open - ecriture_chunk");
+
+  // TAILLE_FRAGMENT
+  if(lseek(fd, index * TAILLE_FRAGMENT, SEEK_SET) == -1)
+    erreur("lseek - ecriture_chunk");
+
+  if(write(fd, data, len - 4) == -1)
+    erreur("write - ecriture_chunk");
+
+  if(close(fd) == -1);
+    erreur("close - ecriture_chunk");
+}
 
 int main(int argc, char ** argv)
 {
