@@ -16,12 +16,56 @@
 
 #define BUF_SIZE 1024
 
+typedef struct {int id; int idmax; char * data;} fragments;
+
 void erreur(char *msg)
 {
   printf("%s \n", msg);
   perror("");
   exit(-1);
 }
+
+// /*
+//   -> vérifie si l'index est bon
+//   -> renvoie l'index du hashchunk ou -1 si erreur
+// */
+// int indexChunk(char * hashChunkEntree, char * fichier)
+// {
+//   int nb;
+//   char ** hAllChunks = hashAllChunks(fichier, &nb);
+//
+//   // on vérifie si le hashChunkEntree appartient bien à un hash de chunk du fichier et on récupère l'index
+//   for(i = 0; i < nb; i++)
+//   {
+//     if(strcmp(hashChunkEntree, hAllChunks[i]) == 0)
+//     {
+//       return i;
+//     }
+//   }
+//
+//   return -1;
+// }
+//
+// int recuperation_fragment(char * hashFichierEntree, char * hashChunkEntree, char * fichier)
+// {
+//   // on s'arrête si le fichier demandé n'est pas le fichier proposé
+//   if(strcmp(hashFichierEntree, hashFichier(fichier)) != 0)
+//   {
+//     printf("recuperation_fragment: hash du message et hash du fichier différent.");
+//     exit(1);
+//   }
+//
+//   // on récupère l'index
+//   int iChunk = indexChunk(hashChunkEntree, fichier);
+//
+//   if(iChunk == -1)
+//   {
+//     pritnf("indexChunk: échec de la récupération de l'index.");
+//     exit(1);
+//   }
+//
+//   // création du tableau
+// }
 
 int main(int argc, char ** argv)
 {

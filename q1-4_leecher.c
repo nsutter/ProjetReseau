@@ -16,7 +16,7 @@
 
 #define BUF_SIZE 1024
 
-#define TAILLE_FRAGMENT 900
+#define TAILLE_FRAGMENT 800
 
 void erreur(char *msg)
 {
