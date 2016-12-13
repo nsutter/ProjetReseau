@@ -16,6 +16,10 @@
 
 #define BUF_SIZE 1024
 
+#define TAILLE_CHUNK 1000000
+
+#define TAILLE_FRAGMENT 800
+
 typedef struct {int id; int idmax; char * data;} fragments;
 
 void erreur(char *msg)
@@ -25,47 +29,103 @@ void erreur(char *msg)
   exit(-1);
 }
 
-// /*
-//   -> vérifie si l'index est bon
-//   -> renvoie l'index du hashchunk ou -1 si erreur
-// */
-// int indexChunk(char * hashChunkEntree, char * fichier)
-// {
-//   int nb;
-//   char ** hAllChunks = hashAllChunks(fichier, &nb);
-//
-//   // on vérifie si le hashChunkEntree appartient bien à un hash de chunk du fichier et on récupère l'index
-//   for(i = 0; i < nb; i++)
-//   {
-//     if(strcmp(hashChunkEntree, hAllChunks[i]) == 0)
-//     {
-//       return i;
-//     }
-//   }
-//
-//   return -1;
-// }
-//
-// int recuperation_fragment(char * hashFichierEntree, char * hashChunkEntree, char * fichier)
-// {
-//   // on s'arrête si le fichier demandé n'est pas le fichier proposé
-//   if(strcmp(hashFichierEntree, hashFichier(fichier)) != 0)
-//   {
-//     printf("recuperation_fragment: hash du message et hash du fichier différent.");
-//     exit(1);
-//   }
-//
-//   // on récupère l'index
-//   int iChunk = indexChunk(hashChunkEntree, fichier);
-//
-//   if(iChunk == -1)
-//   {
-//     pritnf("indexChunk: échec de la récupération de l'index.");
-//     exit(1);
-//   }
-//
-//   // création du tableau
-// }
+/*
+  -> vérifie si l'index est bon
+  -> renvoie l'index du hashchunk ou -1 si erreur
+*/
+int indexChunk(char * hashChunkEntree, char * fichier)
+{
+  int i, nb;
+  char ** hAllChunks = hashAllChunks(fichier, &nb);
+
+  // on vérifie si le hashChunkEntree appartient bien à un hash de chunk du fichier et on récupère l'index
+  for(i = 0; i < nb; i++)
+  {
+    if(strcmp(hashChunkEntree, hAllChunks[i]) == 0)
+    {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+// tabFragments modifié par effet de bord
+fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntree, char * fichier, int index)
+{
+  // on s'arrête si le fichier demandé n'est pas le fichier proposé
+  if(strcmp(hashFichierEntree, hashFichier(fichier)) != 0)
+  {
+    printf("recuperation_fragment: hash du message et hash du fichier différent.");
+    exit(1);
+  }
+
+  // on récupère l'index
+  int iChunk = indexChunk(hashChunkEntree, fichier); // ou int iChunk = index;
+
+  if(iChunk == -1)
+  {
+    printf("indexChunk: échec de la récupération de l'index.");
+    exit(1);
+  }
+
+  int i, fd = open(fichier, O_RDONLY);
+
+  int iFichier = iChunk * TAILLE_CHUNK; // index lseek du fichier;
+
+  int tFichier = lseek(fd, 0, SEEK_END);
+
+  int nOctetsEnvoi; // nombre d'octets au total qu'on veut envoyer
+
+  if(tFichier - iFichier > TAILLE_CHUNK)
+  {
+    nOctetsEnvoi = TAILLE_CHUNK; // cas où on envoie un chunk complet <=> 1 000 000 octets
+  }
+  else
+  {
+    nOctetsEnvoi = tFichier - (tFichier % TAILLE_CHUNK); // cas où on envoie le dernier chunk <=> < 1 000 000 octets
+  }
+
+  int nEnvoi = nOctetsEnvoi / TAILLE_FRAGMENT; // nombre de paquets qu'on doit envoyer pour envoyer nOctetsEnvoi octets
+
+  if(nOctetsEnvoi % TAILLE_FRAGMENT != 0)
+  {
+    nEnvoi++;
+  }
+
+  // création du tableau
+  fragments * tabFragments = malloc(nEnvoi * sizeof(fragments));
+
+  if(lseek(fd, iFichier, SEEK_SET) == -1)
+    erreur("recuperation_fragment");
+
+  int tailleLue;
+
+  printf("nEnvoi : %d\n", nEnvoi);
+
+  for(i = 0; i < nEnvoi; i++)
+  {
+    tabFragments[i].id = i; // index courant
+    tabFragments[i].idmax = nEnvoi - 1; // index max
+    tabFragments[i].data = malloc(TAILLE_FRAGMENT * sizeof(char));
+    if(tabFragments[i].data == NULL)
+    {
+      printf("erreur malloc\n");
+    }
+
+    tailleLue = read(fd, tabFragments[i].data, TAILLE_FRAGMENT);
+
+    if(tailleLue == -1)
+      erreur("recuperation_fragment");
+
+    if(tailleLue < TAILLE_FRAGMENT)
+      printf("DERNIER BLOC (censé s'arrêter mtn)\n");
+  }
+
+  tabFragments[i - 1].data[tailleLue -1] = '\0';
+
+  return tabFragments;
+}
 
 int main(int argc, char ** argv)
 {
@@ -107,18 +167,77 @@ int main(int argc, char ** argv)
     memset(buf, 0, BUF_SIZE);
     if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
       erreur("recvfrom");
-
+    printf("reçu\n");
     unsigned short int lg_total;
+    unsigned short int lg_hash;
     int new_lg;
 
     if(buf[0] == 100) // get
     {
+      printf("yolo\n");
+      memcpy(&lg_total, buf+1, 2);
+      new_lg= lg_total;
+      if(buf[3] != 50)
+        continue;
+      memcpy(&lg_hash, buf+4, 2);
+      char * tmp_hash= malloc((lg_hash+1)*sizeof(char));
+      memcpy(tmp_hash, buf+6, lg_hash);
+      tmp_hash[lg_hash]='\0';
+      printf("ok\n");
+      if(buf[6+lg_hash]!= 51)
+        continue;
+      printf("on arrive ici\n");
+      unsigned short int size_hash;
+      memcpy(&size_hash, buf+lg_hash+7, 2);
+      size_hash=size_hash-2;
+      char * hash_chunk= malloc((size_hash+1)*sizeof(char));
+      memcpy(hash_chunk, buf+9+lg_hash, size_hash);
+      hash_chunk[size_hash]= '\0';
+      unsigned short int index;
+      memcpy(&index, buf+size_hash+lg_hash+9, 2);
+      fragments * tabFragments=NULL;
+
+      tabFragments = recuperation_fragment(tmp_hash, hash_chunk, argv[2], index);
+      if(tabFragments ==NULL)printf("théo est un intelligent\n");
+      printf("debut\n");
+      tabFragments[0].data[799]='\0';
+      printf("%s\n", tabFragments[0].data);
+      printf("passe\n");
+      unsigned short int i;
+      unsigned short int nb_segment= tabFragments[0].idmax;
+      unsigned short int taille_frag= TAILLE_FRAGMENT;
+      unsigned short int lg_total= 11+lg_hash+size_hash+7+taille_frag;
+      char * fragment= malloc(lg_total*sizeof(char));
+      memcpy(fragment, buf, 11+lg_hash+size_hash);
+      fragment[0]=101;
+      fragment[11+lg_hash+size_hash]=60;
+      memcpy(fragment+11+lg_hash+size_hash+1, &taille_frag, 2);
+      memcpy(fragment+1, &lg_total, 2);
+      for(i=0; i<nb_segment; i++)
+      {
+        printf("envoi chunk bout:%d\n", i);
+        memcpy(fragment+11+lg_hash+size_hash+3, &i, 2);
+        memcpy(fragment+11+lg_hash+size_hash+5, &nb_segment, 2);
+        memcpy(fragment+11+lg_hash+size_hash+7, tabFragments[i].data, taille_frag);
+        if(sendto(sockfd, fragment, lg_total, 0, (struct sockaddr *) &client, addrlen) == -1)
+          erreur("sendto");
+      }
+      printf("envoi chunk bout:%d\n", i);
+      unsigned short int taille_dernier= strlen(tabFragments[i].data);
+      lg_total= 11+lg_hash+size_hash+7+taille_dernier;
+      memcpy(fragment+1, &lg_total, 2);
+      memcpy(fragment+11+lg_hash+size_hash+1, &taille_dernier, 2);
+      memcpy(fragment+11+lg_hash+size_hash+3, &i, 2);
+      memcpy(fragment+11+lg_hash+size_hash+5, &nb_segment, 2);
+      memcpy(fragment+11+lg_hash+size_hash+5, tabFragments[i].data, taille_dernier);
+      if(sendto(sockfd, msg, lg_total, 0, (struct sockaddr *) &client, addrlen) == -1)
+        erreur("sendto");
+
 
     }
     else if(buf[0] == 102) // list
     {
       // on récupère le hash dans le msg list
-      unsigned short int lg_hash;
       memcpy(&lg_total, buf+1, 2);
       new_lg= lg_total;
       memcpy(&lg_hash, buf+4, 2);
