@@ -1,0 +1,34 @@
+.TH  q1-2_client 3 "December 13, 2016" "Version 1.0" "Manuel de q1-2_client"
+.SH NAME
+.B q1-2_client \- Pseudo-client P2P.
+.SH SYNOPSIS
+.B ./q1-2_client traddr trport clport type hash
+.SH DESCRIPTION
+Pseudo-client P2P. Peut annoncer un hash (fictif) et recuperer la liste des IPs qui fournissent ce hash.
+.SH RETURN VALUE
+CA RENVOIE RIEN MDR
+.SH OPTIONS
+Options :
+.TP
+\fBtraddr\fP
+Adresse IPv6 du tracker.
+.TP
+\fBtrport\fP
+Port du tracker.
+.TP
+\fBclport\fP
+Port de notre programme sur lequel on va ecouter les reponses du tracker.
+.TP
+\fBtype\fP
+Type du message
+.br
+put = on annonce un hash
+.br
+get = on demande un hash
+.TP
+\fBhash\fP
+Hash annonce/demande.
+.SH LICENCE
+Ce logiciel est soumis a la GNU General Public License.
+.SH AUTHOR
+\fBNicolas Sutter & Theo Poizat\fP
