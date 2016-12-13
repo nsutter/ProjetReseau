@@ -147,13 +147,13 @@ int main(int argc, char ** argv)
     if(sendto(sockfd, msg, 139, 0, (struct sockaddr *) &dest, addrlen) == -1)
       erreur("sendto");
 
-    int nb_part=0; // on commence à 1 pour rentrer 1 fois dans le while
+    int nb_part=0;
     int nb_courant=0;
-    do {
+    while(nb_courant <= nb_part){
       memset(buf, '0', BUF_SIZE);
       if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
         erreur("recvfrom");
-      if(memcmp(buf+3, msg+3, 1) != 0)
+      if(memcmp(buf+3, msg+3, 136) != 0)
         continue;
       if(buf[139] != 60)
         continue;
@@ -173,9 +173,21 @@ int main(int argc, char ** argv)
       buf_ecriture[lg-4]= '\0';
       pos_ecriture= pos_ecriture+lg-4;
       ecriture_fragment(nb_courant, buf_ecriture, fd, i);
+      char * ack= malloc(141*sizeof(char));
+      ack[0]=105;
+      tmp= 138;
+      memcpy(ack+1, &tmp, 2);
+      memcpy(ack+3, msg+3, 136);
+      memcpy(ack+139, &nb_courant, 2);
+      printf("aquitte nb: %d/%d\n", nb_courant, nb_part);
+      if(sendto(sockfd, ack, 141, 0, (struct sockaddr *) &dest, addrlen) == -1)
+        erreur("sendto");
+      free(ack);
       nb_courant++;
-    } while(nb_courant < nb_part);
+    }
+    printf("fin\n");
   }
+  free(msg);
   if(close(fd) == -1);
     erreur("close - ecriture_chunk");
   // check si le fichier est le bon

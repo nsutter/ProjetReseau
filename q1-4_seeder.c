@@ -180,6 +180,7 @@ int main(int argc, char ** argv)
 
     if(buf[0] == 100) // get
     {
+      printf("message reçu\n");
       memcpy(&lg_total, buf+1, 2);
       new_lg= lg_total;
       if(buf[3] != 50)
@@ -198,8 +199,7 @@ int main(int argc, char ** argv)
       hash_chunk[size_hash]= '\0';
       unsigned short int index;
       memcpy(&index, buf+size_hash+lg_hash+9, 2);
-      fragments * tabFragments=NULL;
-
+      fragments * tabFragments;
       tabFragments = recuperation_fragment(tmp_hash, hash_chunk, argv[2], index);
       unsigned short int i;
       unsigned short int nb_segment= tabFragments[0].idmax;
@@ -211,7 +211,6 @@ int main(int argc, char ** argv)
       fragment[11+lg_hash+size_hash]=60;
       memcpy(fragment+11+lg_hash+size_hash+1, &taille_frag, 2);
       memcpy(fragment+1, &lg_total, 2);
-      printf("debut\n");
       for(i=0; i<nb_segment; i++)
       {
         memcpy(fragment+11+lg_hash+size_hash+3, &i, 2);
@@ -219,6 +218,13 @@ int main(int argc, char ** argv)
         memcpy(fragment+11+lg_hash+size_hash+7, tabFragments[i].data, taille_frag);
         if(sendto(sockfd, fragment, lg_total, 0, (struct sockaddr *) &client, addrlen) == -1)
           erreur("sendto");
+        if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
+          erreur("recvfrom");
+        if(buf[0] != 105)
+          continue;
+        if(memcmp(fragment+3, buf+3, 133) != 0)
+          continue;
+        memcpy(&i, buf+139, 2);
       }
       unsigned short int taille_dernier= strlen(tabFragments[i].data);
       lg_total= 11+lg_hash+size_hash+7+taille_dernier;
@@ -226,11 +232,25 @@ int main(int argc, char ** argv)
       memcpy(fragment+11+lg_hash+size_hash+1, &taille_dernier, 2);
       memcpy(fragment+11+lg_hash+size_hash+3, &i, 2);
       memcpy(fragment+11+lg_hash+size_hash+5, &nb_segment, 2);
-      memcpy(fragment+11+lg_hash+size_hash+5, tabFragments[i].data, taille_dernier);
-      if(sendto(sockfd, msg, lg_total, 0, (struct sockaddr *) &client, addrlen) == -1)
-        erreur("sendto");
-
-
+      memcpy(fragment+11+lg_hash+size_hash+7, tabFragments[i].data, taille_dernier);
+      while(i<=nb_segment)
+      {
+        if(sendto(sockfd, fragment, lg_total, 0, (struct sockaddr *) &client, addrlen) == -1)
+          erreur("sendto");
+        if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
+          erreur("recvfrom");
+        if(buf[0] != 105)
+          printf("erreur\n");
+        if(buf[0] != 105)
+          continue;
+        if(memcmp(fragment+3, buf+3, 133) != 0)
+          continue;
+        memcpy(&i, buf+139, 2);
+        i++;
+      }
+      free(tmp_hash);
+      free(hash_chunk);
+      free(tabFragments);
     }
     else if(buf[0] == 102) // list
     {
