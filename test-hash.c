@@ -4,6 +4,9 @@
 #include <gcrypt.h>
 #include "hash-file.h"
 
+/*
+Simple programme pour vérifier le hash d'un fichier et les hashs de chaque chunk de 1Mo
+*/
 int main(int argc, char *argv[])
 {
   if(argc != 2)

@@ -16,7 +16,7 @@
 
 #define BUF_SIZE 1024
 
-#define TAILLE_FRAGMENT 800
+#define TAILLE_FRAGMENT 800 // taille d'un fragment de chunk envoyé en UDP
 
 #define TAILLE_CHUNK 1000000
 
@@ -29,15 +29,13 @@ void erreur(char *msg)
 
 /*
   Écrit dans le fichier "char * fichier" les données data du paquet d'index "int index"
-  len : longueur des données + en-tête du segment
   index : index du segment
-  data : données
-  fichier : chemin du fichier à écrire
-  i : le numéro
+  data : données à écrire
+  fd : descripteur du fichier dans lequel écrire les données
+  i : numéro du chunk
 */
 void ecriture_fragment(int index, char * data, int fd, int i)
 {
-  // TAILLE_FRAGMENT
   if(lseek(fd, i * TAILLE_CHUNK + index * TAILLE_FRAGMENT, SEEK_SET) == -1)
     erreur("lseek - ecriture_chunk");
 
@@ -56,14 +54,14 @@ int main(int argc, char ** argv)
   struct sockaddr_in6 dest;
   unsigned char * msg;
 
-  // check the number of args on command line
+  // vérification des arguments
   if(argc != 6)
   {
-    printf("nombre d'arguments insuffisants \n");
+    printf("./q1-4_leecher seedadresse seedport port hash output\n");
     exit(-1);
   }
 
-  // socket factory
+  // création du socket
   if((sockfd = socket(AF_INET6, SOCK_DGRAM, IPPROTO_UDP)) == -1) // d'après man et pdf
     erreur("sockfd");
 
@@ -124,6 +122,7 @@ int main(int argc, char ** argv)
   }
   free(msg);
 
+  // création du fichier de sortie
   int fd = open(argv[5], O_WRONLY | O_CREAT | O_TRUNC, 0666);
   if(fd == -1) erreur("open - ecriture_chunk");
 

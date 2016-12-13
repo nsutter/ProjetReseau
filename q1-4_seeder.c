@@ -18,7 +18,7 @@
 
 #define TAILLE_CHUNK 1000000
 
-#define TAILLE_FRAGMENT 800
+#define TAILLE_FRAGMENT 800 // taille d'un fragment de chunk envoyé en UDP
 
 typedef struct {int id; int idmax; char * data;} fragments;
 
@@ -146,7 +146,7 @@ int main(int argc, char ** argv)
   // check the number of args on command line
   if(argc != 3)
   {
-    printf("nombre d'arguments insuffisants \n");
+    printf("./q1-4_seeder port fichier\n");
     exit(-1);
   }
 

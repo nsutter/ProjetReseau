@@ -11,9 +11,7 @@
 #include <netdb.h>
 #include <errno.h>
 
-
 #include "dns_solve.h"
-
 
 struct addrinfo * host_to_ip(char * domain)
 {
@@ -47,7 +45,7 @@ struct in6_addr getip(char * nd)
     {
       struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)rp->ai_addr;
       res= ipv6->sin6_addr;
-      break;                  /* Success */
+      break;
     }
     close(sfd);
   }
@@ -59,5 +57,4 @@ struct in6_addr getip(char * nd)
   close(sfd);
   freeaddrinfo(result);
   return res;
-
 }

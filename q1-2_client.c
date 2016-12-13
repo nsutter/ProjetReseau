@@ -20,6 +20,7 @@ void erreur(char *msg)
   exit(-1);
 }
 
+/* Formate une adresse IP en texte */
 char * formatage_ip(struct sockaddr_in6 my_addr)
 {
   char * retour= malloc(21*sizeof(char));
@@ -62,7 +63,7 @@ int main(int argc, char **argv)
   // check the number of args on command line
   if(argc != 6)
   {
-    printf("nombre d'arguments incorrect \n");
+    printf("usage: ./q1-2_client traddr trport clport type hash\n");
     exit(-1);
   }
 

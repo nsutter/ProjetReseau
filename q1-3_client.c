@@ -74,7 +74,7 @@ int main(int argc, char **argv)
   // check the number of args on command line
   if(argc != 6)
   {
-    printf("nombre d'arguments incorrect \n");
+    printf("./q1-3_client traddr trport clport type hash\n");
     exit(-1);
   }
 
