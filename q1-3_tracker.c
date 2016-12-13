@@ -96,6 +96,8 @@ void * f_thread_timer(void * arg)
   }
 }
 
+// fonction qui test si l'ip+le port + le hash sont deja dans la tableau
+// si on trouve on met a jour le timer
 int test_existance(char * ad, int p, char * hash)
 {
   int i;
@@ -118,6 +120,7 @@ int test_existance(char * ad, int p, char * hash)
   return 0;
 }
 
+// ajoute une ip + port + hash dans le tableau et initialise le timer
 void ajout(char * ad, int p,char * hash)
 {
   if(test_existance(ad, p, hash) == 0)
@@ -143,7 +146,9 @@ void ajout(char * ad, int p,char * hash)
   }
 }
 
-
+//si la fonction get est appeler elle modifie msg par effet de bord et y ajoute
+// tous les ip+ port correspondant a un hash
+//msg contient deja le hash
 void get(char * msg, unsigned short int lg)
 {
   int i;
@@ -174,8 +179,12 @@ void get(char * msg, unsigned short int lg)
   memcpy(msg+1, &lg, 2);
 }
 
+//prends en argument un buf contenant le message reçu, le char code correspondant
+// au type de message, un entier longueur totale qui est modifié par effet de bord
+// et un sockaddr client qui contient les infos du client
 char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total, struct sockaddr_in6 client)
 {
+  //fonctionne comme dans le 1.2
   char * msg;
   struct sockaddr_in6 stock;
 
@@ -212,39 +221,16 @@ char * deformatage(unsigned char* buf, char code, unsigned short int * lg_total,
   return msg;
 }
 
+// affiche toutes les données qu'a le tracker
 void affiche()
 {
   int i;
-
   pthread_mutex_lock(&mutex_association);
-
   for(i=0; i<longueur; i++)
   {
     printf("%s %d %s\n", tableau[i].hash, tableau[i].port, tableau[i].addr);
   }
-
   pthread_mutex_unlock(&mutex_association);
-}
-
-// renvoi 1 si le couple hash ip existe déjà
-
-char * concat(char* str1, char * str2)
-{
-  int lg1= strlen(str1);
-  int lg2= strlen(str2);
-  char * res= malloc(sizeof((lg1+lg2+2)*sizeof(char)));
-  int i;
-  for(i=0; i<lg1; i++)
-  {
-    res[i]=str1[i];
-  }
-  res[lg1]=' ';
-  for(i=1; i<=lg2; i++)
-  {
-    res[i+lg1]= str2[i-1];
-  }
-  res[lg1+lg2+1]= '\0';
-  return res;
 }
 
 int main(int argc, char **argv)
@@ -294,12 +280,7 @@ int main(int argc, char **argv)
 
   // bind addr structure with socket
   if(bind(sockfd, (struct sockaddr *) &my_addr, addrlen) == -1)
-  {
-    perror("bind");
-    close(sockfd);
-    exit(EXIT_FAILURE);
-  }
-
+    erreur("bind");
   printf("listening on %s port %s\n", str, argv[2]);
 
   // création du thread qui gère l'expiration du temps
@@ -344,6 +325,7 @@ int main(int argc, char **argv)
       memcpy(&lg, buf+1, 2);
       if(buf[3] == 50)
       {
+        //on extrait les données hash, ip, port
         unsigned short int lg_hash;
         memcpy(&lg_hash, buf+4, 2);
         char * hash=malloc((lg_hash+1)*sizeof(char));
@@ -352,6 +334,7 @@ int main(int argc, char **argv)
         char addr[INET6_ADDRSTRLEN];
         if (inet_ntop(AF_INET6, &(client.sin6_addr), addr, INET6_ADDRSTRLEN) == NULL)
           erreur("inet_ntop");
+        //on met a jour le timer avec test existance si le couple est dedans
         test_existance(addr,ntohs(client.sin6_port),hash);
         free(hash);
         char * msg= malloc((6+lg_hash)*sizeof(char));
@@ -359,7 +342,6 @@ int main(int argc, char **argv)
         msg[0]=115;
         if(sendto(sockfd, msg, 6+lg_hash, 0, (struct sockaddr *) &client, addrlen) == -1) erreur("sendto");
       }
-
 
     }
     memset(buf, '\0', BUF_SIZE);
