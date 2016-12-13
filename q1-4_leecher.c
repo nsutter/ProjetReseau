@@ -32,21 +32,14 @@ void erreur(char *msg)
   data : données
   fichier : chemin du fichier à écrire
 */
-void ecriture_fragment(int len, int index, char * data, char * fichier)
+void ecriture_fragment(int index, char * data, int fd)
 {
-  int fd = open(fichier, O_RDWR | O_CREAT, 0666);
-
-  if(fd == -1) erreur("open - ecriture_chunk");
-
   // TAILLE_FRAGMENT
   if(lseek(fd, index * TAILLE_FRAGMENT, SEEK_SET) == -1)
     erreur("lseek - ecriture_chunk");
 
-  if(write(fd, data, len - 4) == -1)
+  if(write(fd, data, strlen(data)) == -1)
     erreur("write - ecriture_chunk");
-
-  if(close(fd) == -1);
-    erreur("close - ecriture_chunk");
 }
 
 int main(int argc, char ** argv)
@@ -109,58 +102,56 @@ int main(int argc, char ** argv)
     if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
       erreur("recvfrom");
   }
-  printf("fin list chunk\n");
   unsigned short int lg;
   memcpy(&lg, buf+1, 2);
   int i;
-  printf("%d\n", lg);
   char * chunk= malloc(65);
   int nbChunk=0;
   char **tab= malloc(((lg-70)/68) * sizeof(char *));
-  printf("%d\n", ((lg-70)/68));
   for(i=70; i<lg; i++)
   {
     i=i+3;
     memcpy(chunk, buf+i, 64);
     chunk[64]='\0';
     tab[nbChunk]= malloc(65*sizeof(char));
-    strcpy(tab+nbChunk, chunk);
-    printf("%s\n", chunk);
+    strcpy(tab[nbChunk], chunk);
+    printf("%s\n", tab[nbChunk]);
     i=i+65;
     nbChunk++;
   }
   free(msg);
 
+  int fd = open(argv[5], O_WRONLY | O_CREAT | O_TRUNC, 0666);
+  if(fd == -1) erreur("open - ecriture_chunk");
+
   msg= malloc(139*sizeof(char));
   msg[0]=100;
-  unsigned short int tmp=136;
-  memcpy(msg,+1 &tmp, 2);
+  tmp=136;
+  memcpy(msg+1, &tmp, 2);
   msg[3]= 50;
   tmp=64;
   memcpy(msg+4, &tmp, 2);
-  memcpy(msg, argv[4], 64);
-
+  memcpy(msg+6, argv[4], 64);
   int pos_ecriture=0;
   for(i=0; i<nbChunk; i++)
   {
+    printf("chunk %d\n", i);
     msg[70]=51;
     tmp=66;
     memcpy(msg+71, &tmp, 2);
     memcpy(msg+73, tab[i], 64);
+    printf("%s\n", tab[i]);
     memcpy(msg+137, &i, 2);
-
-    if(sendto(sockfd, msg, 139, 0, (struct sockaddr *) &client, addrlen) == -1)
+    if(sendto(sockfd, msg, 139, 0, (struct sockaddr *) &dest, addrlen) == -1)
       erreur("sendto");
 
-    memset(buf, '\0', BUF_SIZE);
-    int nb_part=2;
-    int nb_courant=1;
-    while(nb_courant <= nb_part)
-    {
-      memset(buf, '\0', BUF_SIZE);
+    int nb_part=0; // on commence à 1 pour rentrer 1 fois dans le while
+    int nb_courant=0;
+    do {
+      memset(buf, '0', BUF_SIZE);
       if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
         erreur("recvfrom");
-      if(memcpy(buf+1, msg+1, 138) != 0)
+      if(memcmp(buf+3, msg+3, 1) != 0)
         continue;
       if(buf[139] != 60)
         continue;
@@ -170,18 +161,22 @@ int main(int argc, char ** argv)
       memcpy(&nb_courant_buf, buf+142, 2);
       if(nb_courant_buf != nb_courant)
       {
+        printf("%d %d\n", nb_courant, nb_courant_buf, i);
         i--;
         break;
       }
       memcpy(&nb_part, buf+144, 2);
-      char buf_ecriture= malloc((lg-3)*sizeof(char));
+      char * buf_ecriture= malloc((lg-3)*sizeof(char));
       memcpy(buf_ecriture, buf+146, lg-4);
       buf_ecriture[lg-4]= '\0';
       pos_ecriture= pos_ecriture+lg-4;
-      //faire write dans le fichier;
-      // envoyer ack
-    }
+      ecriture_fragment(nb_courant, buf_ecriture, fd);
+      nb_courant++;
+    } while(nb_courant < nb_part);
   }
+  if(close(fd) == -1);
+    erreur("close - ecriture_chunk");
+  // check si le fichier est le bon
 
   return 0;
 }
