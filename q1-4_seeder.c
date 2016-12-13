@@ -79,15 +79,18 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
 
   int nOctetsEnvoi; // nombre d'octets au total qu'on veut envoyer
 
-  printf("")
+  printf("iFichier : %d, tFichier %d\n", iFichier, tFichier);
+
   if(tFichier - iFichier > TAILLE_CHUNK)
   {
     nOctetsEnvoi = TAILLE_CHUNK; // cas où on envoie un chunk complet <=> 1 000 000 octets
   }
   else
   {
-    nOctetsEnvoi = tFichier - (tFichier % TAILLE_CHUNK); // cas où on envoie le dernier chunk <=> < 1 000 000 octets
+    nOctetsEnvoi = tFichier - (index) * TAILLE_CHUNK; // cas où on envoie le dernier chunk <=> < 1 000 000 octets
   }
+
+  printf("nOctetsEnvoi : %d\n", nOctetsEnvoi);
 
   int nEnvoi = nOctetsEnvoi / TAILLE_FRAGMENT; // nombre de paquets qu'on doit envoyer pour envoyer nOctetsEnvoi octets
 
@@ -122,7 +125,7 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
       erreur("recuperation_fragment");
 
     if(tailleLue < TAILLE_FRAGMENT)
-      printf("DERNIER BLOC (censé s'arrêter mtn)\n");
+       printf("DERNIER BLOC (censé s'arrêter mtn)\n");
   }
 
   tabFragments[i - 1].data[tailleLue -1] = '\0';
