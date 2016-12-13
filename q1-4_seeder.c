@@ -53,20 +53,12 @@ int indexChunk(char * hashChunkEntree, char * fichier)
 // tabFragments modifié par effet de bord
 fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntree, char * fichier, int index)
 {
-  printf("hashChunkEntree : %s\n", hashChunkEntree);
-
-  printf("deubt %s\n", fichier);
-  printf("%s\n", hashFichier(fichier));
-  printf("fin\n");
-
   // on s'arrête si le fichier demandé n'est pas le fichier proposé
   if(strcmp(hashFichierEntree, hashFichier(fichier)) != 0)
   {
     printf("recuperation_fragment: hash du message et hash du fichier différent.");
     exit(1);
   }
-
-  printf("1\n");
 
   // on récupère l'index
   int iChunk = indexChunk(hashChunkEntree, fichier); // ou int iChunk = index;
@@ -77,8 +69,6 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
     exit(1);
   }
 
-  printf("2\n");
-
   int i, fd = open(fichier, O_RDONLY);
 
   int iFichier = iChunk * TAILLE_CHUNK; // index lseek du fichier;
@@ -86,8 +76,6 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
   int tFichier = lseek(fd, 0, SEEK_END);
 
   int nOctetsEnvoi; // nombre d'octets au total qu'on veut envoyer
-
-  printf("iFichier : %d, tFichier %d\n", iFichier, tFichier);
 
   if(tFichier - iFichier > TAILLE_CHUNK)
   {
@@ -98,7 +86,6 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
     nOctetsEnvoi = tFichier - (index) * TAILLE_CHUNK; // cas où on envoie le dernier chunk <=> < 1 000 000 octets
   }
 
-  // printf("nOctetsEnvoi : %d\n", nOctetsEnvoi);
 
   int nEnvoi = nOctetsEnvoi / TAILLE_FRAGMENT; // nombre de paquets qu'on doit envoyer pour envoyer nOctetsEnvoi octets
 
@@ -115,8 +102,6 @@ fragments * recuperation_fragment(char * hashFichierEntree, char * hashChunkEntr
     erreur("recuperation_fragment");
 
   int tailleLue;
-
-  printf("nEnvoi : %d\n", nEnvoi);
 
   for(i = 0; i < nEnvoi; i++)
   {
