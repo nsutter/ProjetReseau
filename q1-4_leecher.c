@@ -90,24 +90,49 @@ int main(int argc, char ** argv)
   int i;
   printf("%d\n", lg);
   char * chunk= malloc(65);
+  int nbChunk=0;
+  char **tab= malloc(((lg-70)/68) * sizeof(char *));
+  printf("%d\n", ((lg-70)/68));
   for(i=70; i<lg; i++)
   {
     i=i+3;
     memcpy(chunk, buf+i, 64);
     chunk[64]='\0';
+    tab[nbChunk]= malloc(65*sizeof(char));
+    strcpy(tab+nbChunk, chunk);
     printf("%s\n", chunk);
     i=i+65;
+    nbChunk++;
   }
   free(msg);
-  while(42 == 42)
+
+  msg= malloc(139*sizeof(char));
+  msg[0]=100;
+  unsigned short int tmp=136;
+  memcpy(msg,+1 &tmp, 2);
+  msg[3]= 50;
+  tmp=64;
+  memcpy(msg+4, &tmp, 2);
+  memcpy(msg, argv[4], 64);
+
+  for(i=0; i<nbChunk; i++)
   {
-    if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
-      erreur("recvfrom");
+    msg[70]=51;
+    tmp=66;
+    memcpy(msg+71, &tmp, 2);
+    memcpy(msg+73, tab[i], 64);
+    memcpy(msg+137, &i, 2);
+
+    if(sendto(sockfd, msg, 139, 0, (struct sockaddr *) &client, addrlen) == -1)
+      erreur("sendto");
 
     memset(buf, '\0', BUF_SIZE);
-
-    if(sendto(sockfd, msg, BUF_SIZE, 0, (struct sockaddr *) &client, addrlen) == -1)
-      erreur("sendto");
+    while(/*on recupere tous les fragements*/)
+    {
+      memset(buf, '\0', BUF_SIZE);
+      if(recvfrom(sockfd, buf, BUF_SIZE, 0, (struct sockaddr *) &client, &addrlen) == -1)
+      erreur("recvfrom");
+    }
   }
 
   return 0;
