@@ -60,7 +60,7 @@ char ** hashAllChunks(char * fichier, int * nb)
 
   long taille = tailleFichier(fd);
 
-  void * buffer = malloc(1000000); // buffer pour stocker le fichier entier
+  void * buffer = malloc(1000000); // buffer pour stocker le chunk entier
 
   int nChunks = taille / 1000000 + 1;
 
@@ -75,7 +75,6 @@ char ** hashAllChunks(char * fichier, int * nb)
     p[i] = sorties[i];
   }
 
-  // boucle
   for(int k = 0; k < nChunks; k++)
   {
     fread(buffer, 1, 1000000, fd); // buffer contient maintenant les données du chunk
