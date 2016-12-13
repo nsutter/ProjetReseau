@@ -16,6 +16,10 @@
 
 #define BUF_SIZE 1024
 
+#define TAILLE_CHUNK 1000000
+
+#define TAILLE_FRAGMENT 800
+
 typedef struct {int id; int idmax; char * data;} fragments;
 
 void erreur(char *msg)
@@ -25,47 +29,96 @@ void erreur(char *msg)
   exit(-1);
 }
 
-// /*
-//   -> vérifie si l'index est bon
-//   -> renvoie l'index du hashchunk ou -1 si erreur
-// */
-// int indexChunk(char * hashChunkEntree, char * fichier)
-// {
-//   int nb;
-//   char ** hAllChunks = hashAllChunks(fichier, &nb);
-//
-//   // on vérifie si le hashChunkEntree appartient bien à un hash de chunk du fichier et on récupère l'index
-//   for(i = 0; i < nb; i++)
-//   {
-//     if(strcmp(hashChunkEntree, hAllChunks[i]) == 0)
-//     {
-//       return i;
-//     }
-//   }
-//
-//   return -1;
-// }
-//
-// int recuperation_fragment(char * hashFichierEntree, char * hashChunkEntree, char * fichier)
-// {
-//   // on s'arrête si le fichier demandé n'est pas le fichier proposé
-//   if(strcmp(hashFichierEntree, hashFichier(fichier)) != 0)
-//   {
-//     printf("recuperation_fragment: hash du message et hash du fichier différent.");
-//     exit(1);
-//   }
-//
-//   // on récupère l'index
-//   int iChunk = indexChunk(hashChunkEntree, fichier);
-//
-//   if(iChunk == -1)
-//   {
-//     pritnf("indexChunk: échec de la récupération de l'index.");
-//     exit(1);
-//   }
-//
-//   // création du tableau
-// }
+/*
+  -> vérifie si l'index est bon
+  -> renvoie l'index du hashchunk ou -1 si erreur
+*/
+int indexChunk(char * hashChunkEntree, char * fichier)
+{
+  int i, nb;
+  char ** hAllChunks = hashAllChunks(fichier, &nb);
+
+  // on vérifie si le hashChunkEntree appartient bien à un hash de chunk du fichier et on récupère l'index
+  for(i = 0; i < nb; i++)
+  {
+    if(strcmp(hashChunkEntree, hAllChunks[i]) == 0)
+    {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+// tabFragments modifié par effet de bord
+int recuperation_fragment(char * hashFichierEntree, char * hashChunkEntree, char * fichier, fragments * tabFragments)
+{
+  // on s'arrête si le fichier demandé n'est pas le fichier proposé
+  if(strcmp(hashFichierEntree, hashFichier(fichier)) != 0)
+  {
+    printf("recuperation_fragment: hash du message et hash du fichier différent.");
+    exit(1);
+  }
+
+  // on récupère l'index
+  int iChunk = indexChunk(hashChunkEntree, fichier);
+
+  if(iChunk == -1)
+  {
+    printf("indexChunk: échec de la récupération de l'index.");
+    exit(1);
+  }
+
+  int iFichier = iChunk * TAILLE_CHUNK; // index lseek du fichier;
+
+  int tFichier = tailleFichier(fichier);
+
+  int nOctetsEnvoi; // nombre d'octets au total qu'on veut envoyer
+
+  if(tFichier - iFichier > TAILLE_CHUNK)
+  {
+    nOctetsEnvoi = TAILLE_CHUNK; // cas où on envoie un chunk complet <=> 1 000 000 octets
+  }
+  else
+  {
+    nOctetsEnvoi = tFichier - (tFichier % TAILLE_CHUNK); // cas où on envoie le dernier chunk <=> < 1 000 000 octets
+  }
+
+  int nEnvoi = nOctetsEnvoi / TAILLE_FRAGMENT; // nombre de paquets qu'on doit envoyer pour envoyer nOctetsEnvoi octets
+
+  if(nOctetsEnvoi % TAILLE_FRAGMENT != 0)
+  {
+    nEnvoi++;
+  }
+
+  // création du tableau
+  tabFragments = malloc(nEnvoi * sizeof(fragments));
+
+  int i, fd = open(fichier, O_RDONLY);
+
+  if(lseek(fd, iFichier, SEEK_SET) == -1)
+    erreur("recuperation_fragment");
+
+  int tailleLue;
+
+  for(i = 0; i < nEnvoi; i++)
+  {
+    tabFragments[i].id = i; // index courant
+    tabFragments[i].idmax = nEnvoi - 1; // index max
+
+    tabFragments[i].data = malloc(TAILLE_FRAGMENT * sizeof(char));
+
+    tailleLue = read(fd, tabFragments[i].data, TAILLE_FRAGMENT);
+
+    if(tailleLue == -1)
+      erreur("recuperation_fragment");
+
+    if(tailleLue < TAILLE_FRAGMENT)
+      printf("DERNIER BLOC (censé s'arrêter mtn)\n");
+  }
+
+  return tailleLue;
+}
 
 int main(int argc, char ** argv)
 {
