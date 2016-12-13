@@ -59,7 +59,7 @@ int main(int argc, char ** argv)
   // check the number of args on command line
   if(argc != 6)
   {
-    printf("nombre d'arguments insuffisants \n");
+    printf("./q1-4_leecher seedadresse seedport port hash output\n");
     exit(-1);
   }
 
